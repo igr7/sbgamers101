@@ -1,0 +1,13 @@
+{
+  "name": "sbgamers",
+  "private": true,
+  "workspaces": ["web", "worker"],
+  "scripts": {
+    "dev:web": "npm run dev --workspace=web",
+    "dev:worker": "npm run dev --workspace=worker",
+    "build:web": "npm run build --workspace=web",
+    "build:worker": "npm run build --workspace=worker",
+    "deploy:web": "npm run deploy --workspace=web",
+    "deploy:worker": "npm run deploy --workspace=worker"
+  }
+}
