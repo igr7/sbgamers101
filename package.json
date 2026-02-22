@@ -1,13 +1,17 @@
 {
   "name": "sbgamers",
   "private": true,
-  "workspaces": ["web", "worker"],
+  "workspaces": ["web", "worker", "api"],
   "scripts": {
     "dev:web": "npm run dev --workspace=web",
     "dev:worker": "npm run dev --workspace=worker",
+    "dev:api": "npm run dev --workspace=api",
     "build:web": "npm run build --workspace=web",
     "build:worker": "npm run build --workspace=worker",
+    "build:api": "npm run build --workspace=api",
     "deploy:web": "npm run deploy --workspace=web",
-    "deploy:worker": "npm run deploy --workspace=worker"
+    "deploy:worker": "npm run deploy --workspace=worker",
+    "db:push": "npm run db:push --workspace=api",
+    "db:studio": "npm run db:studio --workspace=api"
   }
 }

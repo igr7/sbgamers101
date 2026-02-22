@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id                  Int            @id @default(autoincrement())
+  asin                String         @unique
+  title               String?
+  brand               String?
+  description         String?
+  price               Decimal?       @db.Decimal(10, 2)
+  original_price      Decimal?       @db.Decimal(10, 2)
+  discount_percentage Int?
+  rating              Decimal?       @db.Decimal(3, 2)
+  ratings_count       Int?
+  main_image          String?
+  images              Json?
+  availability        String?
+  is_prime            Boolean?
+  is_best_seller      Boolean?
+  is_amazon_choice    Boolean?
+  category            String?
+  sales_volume        String?
+  variants            Json?
+  raw_data            Json?
+  request_count       Int            @default(0)
+  last_fetched_at     DateTime?
+  created_at          DateTime       @default(now())
+  updated_at          DateTime       @updatedAt
+  priceHistory        PriceHistory[]
+}
+
+model PriceHistory {
+  id                  Int      @id @default(autoincrement())
+  asin                String
+  price               Decimal? @db.Decimal(10, 2)
+  original_price      Decimal? @db.Decimal(10, 2)
+  discount_percentage Int?
+  availability        String?
+  is_prime            Boolean?
+  currency            String   @default("SAR")
+  recorded_at         DateTime @default(now())
+  product             Product? @relation(fields: [asin], references: [asin], onDelete: Cascade)
+
+  @@index([asin])
+  @@index([asin, recorded_at(sort: Desc)])
+}
+
+model TrackedProduct {
+  id              Int       @id @default(autoincrement())
+  asin            String    @unique
+  title           String?
+  is_active       Boolean   @default(true)
+  tracked_since   DateTime  @default(now())
+  last_fetched_at DateTime?
+  fetch_count     Int       @default(0)
+}
+
+model SearchCache {
+  id         Int      @id @default(autoincrement())
+  cache_key  String   @unique
+  params     Json
+  results    Json
+  saved_at   DateTime @default(now())
+  expires_at DateTime
+}
+
+model ApiUsageLog {
+  id          Int      @id @default(autoincrement())
+  endpoint    String
+  asin        String?
+  query       String?
+  status      String
+  response_ms Int?
+  created_at  DateTime @default(now())
+
+  @@index([endpoint, created_at])
+  @@index([created_at])
+}
