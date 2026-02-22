@@ -1,5 +1,6 @@
-import { initializeApp } from '@/lib/init'
-
-initializeApp()
-
-export { default } from 'next'
+export async function register() {
+  if (process.env.NEXT_RUNTIME === 'nodejs') {
+    const { initializeApp } = await import('./lib/init')
+    initializeApp()
+  }
+}
