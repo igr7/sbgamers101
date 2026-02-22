@@ -1,9 +1,0 @@
-name = "sbgamers"
-compatibility_date = "2024-10-18"
-compatibility_flags = ["nodejs_compat"]
-pages_build_output_dir = ".vercel/output/static"
-
-[[d1_databases]]
-binding = "DB"
-database_name = "sbgamers-db"
-database_id = "6ee666e5-aea6-4e9f-bcf5-0a95c04fe6ec"
