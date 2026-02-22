@@ -5,12 +5,25 @@ import { Product } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { formatPrice } from '@/lib/utils';
 
+const AFFILIATE_TAG = 'sbgamers-21';
+
+function getAffiliateUrl(amazonUrl: string): string {
+  try {
+    const url = new URL(amazonUrl);
+    url.searchParams.set('tag', AFFILIATE_TAG);
+    return url.toString();
+  } catch {
+    return amazonUrl;
+  }
+}
+
 export default function ProductCard({ product }: { product: Product }) {
   const { lang, t } = useI18n();
   const hasDiscount = product.discount_pct > 0 && product.original_price > product.current_price;
+  const affiliateUrl = getAffiliateUrl(product.amazon_url);
 
   return (
-    <Link href={`/product/${product.asin}`} className="card group flex flex-col relative">
+    <div className="card group flex flex-col relative">
       {hasDiscount && (
         <div className="absolute top-3 start-3 z-10 badge-discount flex items-center gap-1">
           <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -20,19 +33,21 @@ export default function ProductCard({ product }: { product: Product }) {
         </div>
       )}
 
-      <div className="relative aspect-[4/3] bg-gradient-to-b from-white/[0.02] to-transparent rounded-t-2xl p-5 flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        {product.image_url ? (
-          <img
-            src={product.image_url}
-            alt={product.title}
-            className="max-h-full max-w-full object-contain group-hover:scale-110 transition-transform duration-500"
-            loading="lazy"
-          />
-        ) : (
-          <div className="text-5xl opacity-20">📦</div>
-        )}
-      </div>
+      <Link href={`/product/${product.asin}/`} className="block">
+        <div className="relative aspect-[4/3] bg-gradient-to-b from-white/[0.02] to-transparent rounded-t-2xl p-5 flex items-center justify-center overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          {product.image_url ? (
+            <img
+              src={product.image_url}
+              alt={product.title}
+              className="max-h-full max-w-full object-contain group-hover:scale-110 transition-transform duration-500"
+              loading="lazy"
+            />
+          ) : (
+            <div className="text-5xl opacity-20">📦</div>
+          )}
+        </div>
+      </Link>
 
       <div className="p-4 flex flex-col flex-1 gap-2 bg-gradient-to-b from-transparent to-black/20">
         <span className="text-[10px] font-semibold text-emerald-500/80 uppercase tracking-widest">
@@ -77,6 +92,6 @@ export default function ProductCard({ product }: { product: Product }) {
       </div>
 
       <div className="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-emerald-500/0 to-transparent group-hover:via-emerald-500/30 transition-all duration-300" />
-    </Link>
+    </div>
   );
 }

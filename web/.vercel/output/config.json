@@ -143,7 +143,7 @@
       "handle": "hit"
     },
     {
-      "src": "/_next/static/(?:[^/]+/pages|pages|chunks|runtime|css|image|media|9s371LTaWOrfBLSVW\\-jdu)/.+",
+      "src": "/_next/static/(?:[^/]+/pages|pages|chunks|runtime|css|image|media|XWjO8oynxR3je7L\\-YfGWQ)/.+",
       "headers": {
         "cache-control": "public,max-age=31536000,immutable"
       },
@@ -186,46 +186,6 @@
       }
     }
   ],
-  "images": {
-    "domains": [],
-    "sizes": [
-      640,
-      750,
-      828,
-      1080,
-      1200,
-      1920,
-      2048,
-      3840,
-      16,
-      32,
-      48,
-      64,
-      96,
-      128,
-      256,
-      384
-    ],
-    "remotePatterns": [
-      {
-        "protocol": "https",
-        "hostname": "^(?:^(?:m\\.media\\-amazon\\.com)$)$",
-        "pathname": "^(?:(?!(?:^|\\/)\\.{1,2}(?:\\/|$))(?:(?:(?!(?:^|\\/)\\.{1,2}(?:\\/|$)).)*?)\\/?)$"
-      },
-      {
-        "protocol": "https",
-        "hostname": "^(?:^(?:images\\-na\\.ssl\\-images\\-amazon\\.com)$)$",
-        "pathname": "^(?:(?!(?:^|\\/)\\.{1,2}(?:\\/|$))(?:(?:(?!(?:^|\\/)\\.{1,2}(?:\\/|$)).)*?)\\/?)$"
-      }
-    ],
-    "minimumCacheTTL": 60,
-    "formats": [
-      "image/webp"
-    ],
-    "dangerouslyAllowSVG": false,
-    "contentSecurityPolicy": "script-src 'none'; frame-src 'none'; sandbox;",
-    "contentDispositionType": "inline"
-  },
   "overrides": {
     "404.html": {
       "path": "404",

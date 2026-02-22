@@ -10,7 +10,7 @@ export default function CategoryCard({ category }: { category: Category }) {
 
   return (
     <Link
-      href={`/category/${category.slug}`}
+      href={`/category/${category.slug}/`}
       className="group bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.06] hover:border-emerald-500/20
                  rounded-2xl p-6 flex flex-col items-center gap-3 text-center transition-all duration-300
                  hover:shadow-lg hover:shadow-emerald-500/5"

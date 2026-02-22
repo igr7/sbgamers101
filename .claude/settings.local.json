@@ -7,7 +7,17 @@
       "Bash(npx next build)",
       "Bash(npx wrangler:*)",
       "Bash(curl:*)",
-      "Bash(python -m json.tool:*)"
+      "Bash(python -m json.tool:*)",
+      "Bash(export CLOUDFLARE_API_TOKEN=\"fcxe_MJn_HX4RG8DplNvbJo-cxWJwPj45KlV5HsU\")",
+      "Bash(npm run build:*)",
+      "Bash(npx @cloudflare/next-on-pages:*)",
+      "Bash(where:*)",
+      "Bash(npx vercel build --prod)",
+      "Bash(npx vercel build:*)",
+      "Bash(CLOUDFLARE_API_TOKEN=fcxe_MJn_HX4RG8DplNvbJo-cxWJwPj45KlV5HsU CLOUDFLARE_ACCOUNT_ID=3e629dea176d44ca5711a240d21b6e55 npx wrangler pages project create sbgamers --production-branch main)",
+      "Bash(CLOUDFLARE_API_TOKEN=fcxe_MJn_HX4RG8DplNvbJo-cxWJwPj45KlV5HsU CLOUDFLARE_ACCOUNT_ID=3e629dea176d44ca5711a240d21b6e55 npx wrangler pages deploy:*)",
+      "Bash(CLOUDFLARE_API_TOKEN=fcxe_MJn_HX4RG8DplNvbJo-cxWJwPj45KlV5HsU CLOUDFLARE_ACCOUNT_ID=3e629dea176d44ca5711a240d21b6e55 npx wrangler pages project list:*)",
+      "Bash(python:*)"
     ]
   }
 }

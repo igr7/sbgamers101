@@ -114,11 +114,35 @@
 }
 
 [dir="rtl"] {
-  font-family: 'Tajawal', sans-serif;
+  font-family: 'Tajawal', sans-serif !important;
+  direction: rtl;
+  text-align: right;
 }
 
 [dir="rtl"] .font-sans {
-  font-family: 'Tajawal', sans-serif;
+  font-family: 'Tajawal', sans-serif !important;
+}
+
+[dir="rtl"] body {
+  font-family: 'Tajawal', sans-serif !important;
+}
+
+[dir="rtl"] input,
+[dir="rtl"] button,
+[dir="rtl"] a,
+[dir="rtl"] span,
+[dir="rtl"] p,
+[dir="rtl"] h1,
+[dir="rtl"] h2,
+[dir="rtl"] h3,
+[dir="rtl"] h4,
+[dir="rtl"] h5,
+[dir="rtl"] h6 {
+  font-family: 'Tajawal', sans-serif !important;
+}
+
+[dir="rtl"] .rtl\:rotate-180 {
+  transform: rotate(180deg);
 }
 
 @keyframes shimmer {

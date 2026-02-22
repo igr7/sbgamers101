@@ -41,7 +41,7 @@ export default function Footer() {
               {categories.map((cat) => (
                 <Link
                   key={cat.slug}
-                  href={`/category/${cat.slug}`}
+                  href={`/category/${cat.slug}/`}
                   className="text-gray-500 hover:text-emerald-400 text-sm transition-colors"
                 >
                   {lang === 'ar' ? cat.ar : cat.en}
