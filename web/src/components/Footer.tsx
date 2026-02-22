@@ -16,18 +16,19 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="mt-auto bg-[#08080d] border-t border-white/[0.06]">
-      <div className="container-main py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+    <footer className="mt-auto border-t border-white/[0.06] bg-[#06060a]">
+      <div className="container-main py-14">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           {/* Brand */}
-          <div>
+          <div className="md:col-span-2">
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
                 <span className="text-black font-black text-sm">SB</span>
               </div>
-              <span className="text-white font-bold text-lg">Gamers</span>
+              <span className="text-white font-extrabold text-lg">Gamers</span>
+              <span className="text-emerald-400 text-2xl font-bold leading-none">.</span>
             </div>
-            <p className="text-gray-500 text-sm leading-relaxed">
+            <p className="text-gray-500 text-sm leading-relaxed max-w-sm">
               {t('footer.aboutText')}
             </p>
           </div>
@@ -37,7 +38,7 @@ export default function Footer() {
             <h4 className="text-white font-semibold mb-4 text-sm uppercase tracking-wider">
               {t('nav.categories')}
             </h4>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-col gap-2.5">
               {categories.map((cat) => (
                 <Link
                   key={cat.slug}
@@ -50,12 +51,15 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Links */}
+          {/* Quick Links */}
           <div>
             <h4 className="text-white font-semibold mb-4 text-sm uppercase tracking-wider">
-              {t('nav.home')}
+              {lang === 'ar' ? 'روابط سريعة' : 'Quick Links'}
             </h4>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2.5">
+              <Link href="/" className="text-gray-500 hover:text-emerald-400 text-sm transition-colors">
+                {t('nav.home')}
+              </Link>
               <Link href="/deals" className="text-gray-500 hover:text-emerald-400 text-sm transition-colors">
                 {t('nav.deals')}
               </Link>
@@ -67,9 +71,9 @@ export default function Footer() {
         </div>
 
         <div className="divider mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-gray-600 text-xs">{t('footer.disclaimer')}</p>
-          <p className="text-gray-700 text-xs">
-            &copy; {new Date().getFullYear()} SB Gamers
+          <p className="text-gray-600 text-xs leading-relaxed max-w-xl">{t('footer.disclaimer')}</p>
+          <p className="text-gray-700 text-xs shrink-0">
+            &copy; {new Date().getFullYear()} SB Gamers. All rights reserved.
           </p>
         </div>
       </div>

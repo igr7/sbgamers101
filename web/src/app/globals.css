@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Tajawal:wght@300;400;500;700;800&display=swap');
-
 @layer base {
   * {
     box-sizing: border-box;
@@ -11,10 +9,12 @@
 
   html {
     scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {
-    @apply bg-[#08080c] text-gray-200 font-sans antialiased;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   }
 
   ::selection {
@@ -34,9 +34,9 @@
 
 @layer components {
   .card {
-    @apply bg-gradient-to-b from-[#111118] to-[#0d0d12] border border-white/[0.05] rounded-2xl overflow-hidden
-           hover:border-emerald-500/30 transition-all duration-300
-           hover:shadow-xl hover:shadow-emerald-500/5 hover:-translate-y-0.5;
+    @apply bg-gradient-to-b from-[#111118] to-[#0d0d12] border border-white/[0.06] rounded-2xl overflow-hidden
+           hover:border-emerald-500/25 transition-all duration-300
+           hover:shadow-xl hover:shadow-emerald-500/[0.07] hover:-translate-y-1;
   }
 
   .card-glass {
@@ -45,13 +45,13 @@
 
   .btn-primary {
     @apply bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300
-           text-black font-semibold px-6 py-3 rounded-xl transition-all duration-200 active:scale-[0.97]
+           text-black font-bold px-6 py-3 rounded-xl transition-all duration-200 active:scale-[0.97]
            shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40;
   }
 
   .btn-secondary {
-    @apply bg-white/[0.04] hover:bg-white/[0.08] text-gray-200 font-medium px-5 py-2.5 rounded-xl
-           border border-white/[0.06] hover:border-white/[0.12] transition-all duration-200;
+    @apply bg-white/[0.05] hover:bg-white/[0.09] text-gray-200 font-medium px-5 py-2.5 rounded-xl
+           border border-white/[0.08] hover:border-white/[0.15] transition-all duration-200;
   }
 
   .btn-ghost {
@@ -76,9 +76,9 @@
   }
 
   .input-search {
-    @apply w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-2.5 text-sm
+    @apply w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm
            text-gray-200 placeholder-gray-600 focus:outline-none focus:border-emerald-500/40
-           focus:ring-1 focus:ring-emerald-500/20 focus:bg-white/[0.05] transition-all;
+           focus:ring-1 focus:ring-emerald-500/20 focus:bg-white/[0.06] transition-all;
   }
 
   .divider {
@@ -91,7 +91,7 @@
 
   .page-header {
     @apply relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#111118] via-[#0d0d12] to-[#111118]
-           border border-white/[0.05] p-8 mb-8;
+           border border-white/[0.06] p-8 mb-8;
   }
 
   .page-header::before {
@@ -101,7 +101,7 @@
 
   .filter-chip {
     @apply px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer
-           bg-white/[0.03] border border-white/[0.06] text-gray-400 hover:text-white hover:border-white/[0.12];
+           bg-white/[0.04] border border-white/[0.06] text-gray-400 hover:text-white hover:border-white/[0.12];
   }
 
   .filter-chip-active {
