@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["nodejs_20", "npm-9_x"]
+
+[phases.install]
+cmds = ["cd api && npm install"]
+
+[phases.build]
+cmds = ["cd api && npx prisma generate && npx next build"]
+
+[start]
+cmd = "cd api && npx next start -p ${PORT:-3000}"
