@@ -8,7 +8,7 @@ const OMKAR_API_KEY = process.env.OMKAR_API_KEY || ''
 const client = axios.create({
   baseURL: OMKAR_API_BASE,
   headers: { 'API-Key': OMKAR_API_KEY },
-  timeout: 15000,
+  timeout: 25000,
 })
 
 interface OmkarProductResponse {

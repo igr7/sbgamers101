@@ -143,36 +143,39 @@ export async function GET(request: NextRequest): Promise<NextResponse<SearchResp
       )
     }
 
-    for (const product of products.slice(0, 10)) {
-      await prisma.product.upsert({
-        where: { asin: product.asin },
-        create: {
-          asin: product.asin,
-          title: product.title,
-          price: product.price,
-          original_price: product.original_price,
-          discount_percentage: product.discount_percentage,
-          rating: product.rating,
-          ratings_count: product.ratings_count,
-          main_image: product.image_url,
-          is_prime: product.is_prime,
-          is_best_seller: product.is_best_seller,
-          is_amazon_choice: product.is_amazon_choice,
-        },
-        update: {
-          title: product.title,
-          price: product.price,
-          original_price: product.original_price,
-          discount_percentage: product.discount_percentage,
-          rating: product.rating,
-          ratings_count: product.ratings_count,
-          main_image: product.image_url,
-          is_prime: product.is_prime,
-          is_best_seller: product.is_best_seller,
-          is_amazon_choice: product.is_amazon_choice,
-        },
-      }).catch(() => {})
-    }
+    // Fire-and-forget DB upserts to avoid slowing down the response
+    Promise.all(
+      products.slice(0, 10).map((product) =>
+        prisma.product.upsert({
+          where: { asin: product.asin },
+          create: {
+            asin: product.asin,
+            title: product.title,
+            price: product.price,
+            original_price: product.original_price,
+            discount_percentage: product.discount_percentage,
+            rating: product.rating,
+            ratings_count: product.ratings_count,
+            main_image: product.image_url,
+            is_prime: product.is_prime,
+            is_best_seller: product.is_best_seller,
+            is_amazon_choice: product.is_amazon_choice,
+          },
+          update: {
+            title: product.title,
+            price: product.price,
+            original_price: product.original_price,
+            discount_percentage: product.discount_percentage,
+            rating: product.rating,
+            ratings_count: product.ratings_count,
+            main_image: product.image_url,
+            is_prime: product.is_prime,
+            is_best_seller: product.is_best_seller,
+            is_amazon_choice: product.is_amazon_choice,
+          },
+        }).catch(() => {})
+      )
+    ).catch(() => {})
 
     const cacheData = {
       data: { products, total: products.length },
