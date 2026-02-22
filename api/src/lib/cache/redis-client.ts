@@ -6,15 +6,17 @@ const globalForRedis = globalThis as unknown as {
 }
 
 const redisOptions: RedisOptions = {
-  maxRetriesPerRequest: 3,
-  enableReadyCheck: true,
-  lazyConnect: false,
+  maxRetriesPerRequest: 1,
+  enableReadyCheck: false,
+  lazyConnect: true,
+  connectTimeout: 5000,
+  commandTimeout: 3000,
   retryStrategy: (times: number): number | null => {
-    if (times > 10) {
-      log.error('Redis connection failed after 10 retries')
+    if (times > 3) {
+      log.error('Redis connection failed after 3 retries')
       return null
     }
-    return Math.min(times * 100, 3000)
+    return Math.min(times * 200, 2000)
   },
 }
 
