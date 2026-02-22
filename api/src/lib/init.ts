@@ -10,16 +10,10 @@ export function initializeApp(): void {
 
   log.info('Initializing Amazon SA API...')
 
-  try {
-    initializeQueues()
-  } catch (error) {
-    log.error('Failed to initialize queues', { error: error instanceof Error ? error.message : 'Unknown' })
-  }
+  initializeQueues()
 
   if (process.env.NODE_ENV === 'production') {
-    warmOnStartup().catch((err) => {
-      log.error('Failed to warm cache', { error: err instanceof Error ? err.message : 'Unknown' })
-    })
+    warmOnStartup()
   }
 
   log.info('Amazon SA API initialized')

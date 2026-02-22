@@ -58,4 +58,5 @@ export const CacheTTL = {
   search: parseInt(process.env.CACHE_SEARCH_TTL || '1800', 10),
   deals: parseInt(process.env.CACHE_DEALS_TTL || '900', 10),
   reviews: parseInt(process.env.CACHE_REVIEWS_TTL || '86400', 10),
+  categories: parseInt(process.env.CACHE_CATEGORIES_TTL || '86400', 10),
 } as const

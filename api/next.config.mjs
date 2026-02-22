@@ -4,7 +4,6 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '2mb',
     },
-    instrumentationHook: true,
   },
   env: {
     OMKAR_API_KEY: process.env.OMKAR_API_KEY,

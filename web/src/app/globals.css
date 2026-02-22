@@ -1,0 +1,157 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Tajawal:wght@300;400;500;700;800&display=swap');
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-[#08080c] text-gray-200 font-sans antialiased;
+  }
+
+  ::selection {
+    @apply bg-emerald-500/30 text-white;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-white/10 rounded-full hover:bg-white/20;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-gradient-to-b from-[#111118] to-[#0d0d12] border border-white/[0.05] rounded-2xl overflow-hidden
+           hover:border-emerald-500/30 transition-all duration-300
+           hover:shadow-xl hover:shadow-emerald-500/5 hover:-translate-y-0.5;
+  }
+
+  .card-glass {
+    @apply bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-2xl;
+  }
+
+  .btn-primary {
+    @apply bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300
+           text-black font-semibold px-6 py-3 rounded-xl transition-all duration-200 active:scale-[0.97]
+           shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40;
+  }
+
+  .btn-secondary {
+    @apply bg-white/[0.04] hover:bg-white/[0.08] text-gray-200 font-medium px-5 py-2.5 rounded-xl
+           border border-white/[0.06] hover:border-white/[0.12] transition-all duration-200;
+  }
+
+  .btn-ghost {
+    @apply text-gray-400 hover:text-white hover:bg-white/[0.06] px-4 py-2 rounded-lg transition-all duration-200;
+  }
+
+  .badge-discount {
+    @apply bg-gradient-to-r from-emerald-500/20 to-emerald-400/15 text-emerald-400 font-bold
+           px-2.5 py-1 rounded-lg text-xs tracking-wide border border-emerald-500/20;
+  }
+
+  .badge-fake {
+    @apply bg-red-500/15 text-red-400 font-bold px-2.5 py-1 rounded-lg text-xs border border-red-500/20;
+  }
+
+  .section-title {
+    @apply text-2xl font-bold text-white tracking-tight;
+  }
+
+  .container-main {
+    @apply max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .input-search {
+    @apply w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-2.5 text-sm
+           text-gray-200 placeholder-gray-600 focus:outline-none focus:border-emerald-500/40
+           focus:ring-1 focus:ring-emerald-500/20 focus:bg-white/[0.05] transition-all;
+  }
+
+  .divider {
+    @apply border-t border-white/[0.06];
+  }
+
+  .stat-card {
+    @apply bg-gradient-to-b from-white/[0.04] to-white/[0.02] rounded-xl p-4 border border-white/[0.06] text-center;
+  }
+
+  .page-header {
+    @apply relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#111118] via-[#0d0d12] to-[#111118]
+           border border-white/[0.05] p-8 mb-8;
+  }
+
+  .page-header::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-transparent to-emerald-500/5 pointer-events-none;
+  }
+
+  .filter-chip {
+    @apply px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer
+           bg-white/[0.03] border border-white/[0.06] text-gray-400 hover:text-white hover:border-white/[0.12];
+  }
+
+  .filter-chip-active {
+    @apply bg-emerald-500/15 border-emerald-500/30 text-emerald-400 hover:text-emerald-300;
+  }
+
+  .glow-line {
+    @apply h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent;
+  }
+}
+
+[dir="rtl"] {
+  font-family: 'Tajawal', sans-serif !important;
+  direction: rtl;
+  text-align: right;
+}
+
+[dir="rtl"] .font-sans {
+  font-family: 'Tajawal', sans-serif !important;
+}
+
+[dir="rtl"] body {
+  font-family: 'Tajawal', sans-serif !important;
+}
+
+[dir="rtl"] input,
+[dir="rtl"] button,
+[dir="rtl"] a,
+[dir="rtl"] span,
+[dir="rtl"] p,
+[dir="rtl"] h1,
+[dir="rtl"] h2,
+[dir="rtl"] h3,
+[dir="rtl"] h4,
+[dir="rtl"] h5,
+[dir="rtl"] h6 {
+  font-family: 'Tajawal', sans-serif !important;
+}
+
+[dir="rtl"] .rtl\:rotate-180 {
+  transform: rotate(180deg);
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, transparent 25%, rgba(255,255,255,0.03) 50%, transparent 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
