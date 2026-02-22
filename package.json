@@ -3,6 +3,8 @@
   "private": true,
   "workspaces": ["web", "api"],
   "scripts": {
+    "build": "npm run build --workspace=api",
+    "start": "npm run start --workspace=api",
     "dev:web": "npm run dev --workspace=web",
     "dev:api": "npm run dev --workspace=api",
     "build:web": "npm run build --workspace=web",
