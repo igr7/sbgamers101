@@ -20,17 +20,26 @@ const redisOptions: RedisOptions = {
   },
 }
 
-export const redis =
-  globalForRedis.redis ||
-  new Redis(process.env.REDIS_URL || 'redis://localhost:6379', redisOptions)
+let _redis: Redis | undefined = undefined
 
-if (process.env.NODE_ENV !== 'production') {
-  globalForRedis.redis = redis
+function getRedis(): Redis {
+  if (!_redis) {
+    _redis = globalForRedis.redis || new Redis(process.env.REDIS_URL || 'redis://localhost:6379', redisOptions)
+    if (process.env.NODE_ENV !== 'production') {
+      globalForRedis.redis = _redis
+    }
+    _redis.on('connect', () => log.info('Redis connected'))
+    _redis.on('error', (err: Error) => log.error('Redis error', { error: err.message }))
+    _redis.on('close', () => log.warn('Redis connection closed'))
+  }
+  return _redis
 }
 
-redis.on('connect', () => log.info('Redis connected'))
-redis.on('error', (err: Error) => log.error('Redis error', { error: err.message }))
-redis.on('close', () => log.warn('Redis connection closed'))
+export const redis = new Proxy({} as Redis, {
+  get(target, prop) {
+    return Reflect.get(getRedis() as unknown as Record<string, unknown>, prop)
+  },
+}) as Redis
 
 export async function disconnectRedis(): Promise<void> {
   await redis.quit()
