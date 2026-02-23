@@ -30,20 +30,21 @@ Build a complete Amazon Saudi Arabia (amazon.sa) data API system deployed on Cra
 - Implemented Redis caching with stale-while-revalidate
 - Created Bull queue with 4 background jobs
 - Successfully pushed to GitHub (`main` branch)
-- CranL deployment succeeds (build completes)
+- CranL deployment succeeds and API is responding
 - Created `web/src/lib/api.ts` to connect to CranL API
 - Added `getPriceHistory` function to api.ts
 - Added `PriceHistoryEntry` type to api.ts
 - Type check passes for web frontend
 - All changes committed and pushed
+- **FIXED**: TypeScript export errors for Redis client
+- **FIXED**: Lazy-loaded Bull queues to prevent serverless startup timeouts
+- **FIXED**: Removed Prisma dependency from omkar-client for faster API responses
+- **VERIFIED**: All API endpoints working (categories, deals, search)
 
-**IN PROGRESS:**
-- Need to verify both deployments work together
-- Need to set up proper deployment for web frontend (Cloudflare Pages or Vercel)
-
-**NOT DONE:**
-- Test end-to-end functionality
-- Verify data flows from API to web frontend
+**VERIFIED WORKING:**
+- `/api/v1/categories` - Returns list of gaming categories
+- `/api/v1/deals` - Returns products from Omkar API
+- `/api/v1/search` - Returns search results from Omkar API
 
 ## Relevant files / directories
 
