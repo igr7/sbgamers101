@@ -7,7 +7,7 @@ Build a complete Amazon Saudi Arabia (amazon.sa) data API system deployed on Cra
 
 ## Instructions
 
-- Use omkar.cloud Amazon Scraper API (API Key: `ok_cbf6195901abcccbea4b2c804778c9b3`)
+- **MIGRATED TO DECODO API** (Smartproxy) - API Key in `.env.example`
 - Database: `postgresql://gr7:i5fMUf0hZsxUwAhp8IgEbH1skPPwAKWo@sbgamers101-iatkrc:5432/gr7?sslmode=require`
 - Redis: `redis://gr7:RACh0e1u69bwGjkbmL5cksFSrHSE7leM@sbgamers101-fzajqd:6379`
 - GitHub repo: `https://github.com/igr7/sbgamers101.git`
@@ -20,15 +20,16 @@ Build a complete Amazon Saudi Arabia (amazon.sa) data API system deployed on Cra
 - Moving API files to root deleted the web/ folder - had to restore from git commit `d122697`
 - Cloudflare `@cloudflare/next-on-pages` package conflicts with Next.js 14.2.15 - removed it
 - npm install times out - may need `--legacy-peer-deps` flag
+- **Migrated from Omkar to Decodo API** - Decodo (Smartproxy) provides better reliability and response structure
 
 ## Accomplished
 
 **COMPLETED:**
 - Built complete API system with 6 main routes + 3 admin routes + 1 categories route
 - Created Prisma schema with 5 models (Product, PriceHistory, TrackedProduct, SearchCache, ApiUsageLog)
-- Implemented omkar.cloud client with usage logging
+- **MIGRATED**: Replaced Omkar API with Decodo (Smartproxy) API client
 - Implemented Redis caching with stale-while-revalidate
-- Created Bull queue with 4 background jobs
+- Simplified Bull queue system (removed unused jobs, kept price-update job)
 - Successfully pushed to GitHub (`main` branch)
 - CranL deployment succeeds and API is responding
 - Created `web/src/lib/api.ts` to connect to CranL API
@@ -38,26 +39,29 @@ Build a complete Amazon Saudi Arabia (amazon.sa) data API system deployed on Cra
 - All changes committed and pushed
 - **FIXED**: TypeScript export errors for Redis client
 - **FIXED**: Lazy-loaded Bull queues to prevent serverless startup timeouts
-- **FIXED**: Removed Prisma dependency from omkar-client for faster API responses
+- **MIGRATED**: Complete Decodo API integration with proper error handling
 - **VERIFIED**: All API endpoints working (categories, deals, search)
 
 **VERIFIED WORKING:**
 - `/api/v1/categories` - Returns list of gaming categories
-- `/api/v1/deals` - Returns products from Omkar API
-- `/api/v1/search` - Returns search results from Omkar API
+- `/api/v1/deals` - Returns products from Decodo API
+- `/api/v1/search` - Returns search results from Decodo API
+- `/api/v1/product/[asin]` - Returns product details from Decodo API
+- `/api/v1/category/[slug]` - Returns category products (NEW)
 
 ## Relevant files / directories
 
 **API (in `api/` folder - READY):**
 - `api/src/app/api/v1/` - All API routes
-- `api/src/app/api/v1/categories/route.ts` - Categories endpoint (NEW)
-- `api/src/lib/omkar/omkar-client.ts` - omkar.cloud API client
+- `api/src/app/api/v1/categories/route.ts` - Categories endpoint
+- `api/src/app/api/v1/category/[slug]/route.ts` - Category products endpoint (NEW)
+- `api/src/lib/decodo/decodo-client.ts` - Decodo (Smartproxy) API client
 - `api/src/lib/cache/` - Redis caching
 - `api/src/lib/db/prisma-client.ts` - Database connection
-- `api/src/lib/queue/` - Bull queue jobs
+- `api/src/lib/queue/` - Bull queue jobs (simplified)
 - `api/prisma/schema.prisma` - Database schema
 - `api/package.json` - API dependencies
-- `api/.env.example` - Environment variables template
+- `api/.env.example` - Environment variables with Decodo API key
 
 **Web Frontend (in `web/` folder - READY):**
 - `web/src/app/page.tsx` - Home page
