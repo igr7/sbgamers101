@@ -79,10 +79,10 @@ export async function GET(request: NextRequest): Promise<NextResponse<DealsRespo
 
     const categoriesToFetch = validated.category
       ? [validated.category]
-      : Object.keys(AMAZON_SA_CATEGORIES)
+      : ['gpu'] // Only fetch GPU category for performance (most popular)
 
-    // Fetch only 2 categories in parallel for better performance (reduced from 5)
-    const categoryPromises = categoriesToFetch.slice(0, 2).map(async (catSlug) => {
+    // Fetch categories in parallel
+    const categoryPromises = categoriesToFetch.map(async (catSlug) => {
       const category = AMAZON_SA_CATEGORIES[catSlug as keyof typeof AMAZON_SA_CATEGORIES]
       if (!category) return []
 
