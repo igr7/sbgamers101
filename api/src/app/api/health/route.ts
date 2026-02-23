@@ -27,12 +27,20 @@ export async function GET() {
 
   const status = redisOk && dbOk ? 'healthy' : 'degraded'
 
+  const dbUrl = process.env.DATABASE_URL
+  const redisUrl = process.env.REDIS_URL
+
   return NextResponse.json({
     status,
     timestamp: new Date().toISOString(),
     services: {
       redis: redisOk ? 'connected' : 'unavailable',
       database: dbOk ? 'connected' : 'unavailable',
+    },
+    env: {
+      DATABASE_URL: dbUrl ? `${dbUrl.slice(0, 20)}...` : 'NOT SET',
+      REDIS_URL: redisUrl ? `${redisUrl.slice(0, 15)}...` : 'NOT SET',
+      OMKAR_API_KEY: process.env.OMKAR_API_KEY ? 'SET' : 'NOT SET',
     },
   }, { status: status === 'healthy' ? 200 : 503 })
 }
