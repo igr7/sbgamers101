@@ -77,26 +77,27 @@ export async function GET(request: NextRequest): Promise<NextResponse<DealsRespo
       })
     }
 
-    const allDeals: DealProduct[] = []
     const categoriesToFetch = validated.category
       ? [validated.category]
       : Object.keys(AMAZON_SA_CATEGORIES)
 
-    for (const catSlug of categoriesToFetch.slice(0, 5)) {
+    // Fetch all categories in parallel for better performance
+    const categoryPromises = categoriesToFetch.slice(0, 5).map(async (catSlug) => {
       const category = AMAZON_SA_CATEGORIES[catSlug as keyof typeof AMAZON_SA_CATEGORIES]
-      if (!category) continue
+      if (!category) return []
 
       try {
         const searchResult = await decodoApi.search(category.name_en, validated.page)
         const organicResults = searchResult.results?.[0]?.content?.results?.results?.organic || []
-        
+
+        const deals: DealProduct[] = []
         for (const item of organicResults) {
           const mapped = mapDecodoSearchResult(item)
-          
+
           if (validated.min_discount > 0 && (mapped.discount_percentage || 0) < validated.min_discount) continue
           if (validated.min_rating > 0 && (mapped.rating || 0) < validated.min_rating) continue
 
-          allDeals.push({
+          deals.push({
             asin: mapped.asin,
             title: mapped.title,
             main_image: mapped.image_url,
@@ -114,10 +115,15 @@ export async function GET(request: NextRequest): Promise<NextResponse<DealsRespo
             category_name: category.name_en,
           })
         }
+        return deals
       } catch (err) {
         log.warn('Failed to fetch deals for category', { category: catSlug, error: err instanceof Error ? err.message : 'Unknown' })
+        return []
       }
-    }
+    })
+
+    const categoryResults = await Promise.all(categoryPromises)
+    const allDeals = categoryResults.flat()
 
     let sortedDeals = allDeals
     switch (validated.sort) {
