@@ -11,8 +11,8 @@ const dealsQuerySchema = z.object({
   sort: z
     .enum(['biggest_discount', 'lowest_price', 'highest_rating', 'most_reviewed'])
     .default('biggest_discount'),
-  prime_only: z.coerce.boolean().default(false),
-  best_seller_only: z.coerce.boolean().default(false),
+  prime_only: z.preprocess((val) => val === 'true' || val === true, z.boolean()).default(false),
+  best_seller_only: z.preprocess((val) => val === 'true' || val === true, z.boolean()).default(false),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 })

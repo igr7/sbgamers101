@@ -14,7 +14,7 @@ const searchSchema = z.object({
     .default('relevance'),
   min_price: z.coerce.number().min(0).optional(),
   max_price: z.coerce.number().min(0).optional(),
-  prime_only: z.coerce.boolean().default(false),
+  prime_only: z.preprocess((val) => val === 'true' || val === true, z.boolean()).default(false),
   min_rating: z.coerce.number().min(0).max(5).optional(),
   min_discount: z.coerce.number().min(0).max(100).optional(),
 })
