@@ -10,19 +10,22 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 
 export async function GET() {
   let redisOk = false
+  let redisError = ''
   try {
     redisOk = await withTimeout(checkRedisConnection(), 3000)
-  } catch {
-    // Redis unavailable or timeout
+    if (!redisOk) redisError = 'ping failed'
+  } catch (e) {
+    redisError = e instanceof Error ? e.message : 'unknown'
   }
 
   let dbOk = false
+  let dbError = ''
   try {
     const { prisma } = await import('@/lib/db/prisma-client')
-    await withTimeout(prisma.$queryRaw`SELECT 1`, 3000)
+    await withTimeout(prisma.$queryRaw`SELECT 1`, 5000)
     dbOk = true
-  } catch {
-    // DB unavailable or timeout
+  } catch (e) {
+    dbError = e instanceof Error ? e.message : 'unknown'
   }
 
   const status = redisOk && dbOk ? 'healthy' : 'degraded'
@@ -35,7 +38,9 @@ export async function GET() {
     timestamp: new Date().toISOString(),
     services: {
       redis: redisOk ? 'connected' : 'unavailable',
+      redis_error: redisError || undefined,
       database: dbOk ? 'connected' : 'unavailable',
+      db_error: dbError || undefined,
     },
     env: {
       DATABASE_URL: dbUrl ? `${dbUrl.slice(0, 20)}...` : 'NOT SET',
