@@ -7,59 +7,71 @@ Build a complete Amazon Saudi Arabia (amazon.sa) data API system deployed on Clo
 1. **sbgamers.com** (Cloudflare Pages) - Web frontend for browsing products
 2. **sbgamers-api.ghmeshal7.workers.dev** (Cloudflare Workers) - API backend with KV cache
 
+## Current Status
+
+### ✅ Completed
+- **Cloudflare Worker API**: Deployed and fully functional
+  - URL: `https://sbgamers-api.ghmeshal7.workers.dev`
+  - All endpoints working: `/api/v1/health`, `/api/v1/categories`, `/api/v1/deals`, `/api/v1/category/[slug]`
+  - KV caching configured (15 min TTL)
+  - Decodo API integrated
+- **Code Migration**: All CranL references removed
+  - Updated `web/src/lib/api.ts` with Cloudflare Worker URL
+  - Updated `web/.env.production` with new API URL
+  - All changes committed to GitHub (main branch)
+- **Workers Directory**: Added complete Cloudflare Worker code
+  - `workers/src/index.ts` - Main worker with all routes
+  - `workers/wrangler.toml` - Configuration with KV binding
+
+### ⏳ Pending
+- **Cloudflare Pages Configuration**: Needs environment variable setup
+  - Must set `NEXT_PUBLIC_API_URL=https://sbgamers-api.ghmeshal7.workers.dev` in dashboard
+  - Current production deployment still uses old CranL URL
+  - See `SETUP_COMPLETE.md` for detailed instructions
+
 ## Instructions
 
-- **MIGRATED TO CLOUDFLARE WORKERS** - Simplified serverless API
-- **Decodo API** (Smartproxy) - API Key stored in Cloudflare Worker secrets
+- **API**: Cloudflare Worker at `sbgamers-api.ghmeshal7.workers.dev`
+- **Decodo API Key**: Stored in Cloudflare Worker secrets
 - GitHub repo: `https://github.com/igr7/sbgamers101.git`
 - Branch: `main`
-- Web frontend calls API at `https://sbgamers-api.ghmeshal7.workers.dev`
 
-## Discoveries
+## Architecture
 
-- Migrated from CranL to Cloudflare Workers for better performance and simplicity
-- Removed PostgreSQL/Redis dependencies - using Cloudflare KV for caching
-- Cloudflare Workers provides instant global deployment
-- KV cache with 15-minute TTL for API responses
+```
+sbgamers.com (Cloudflare Pages)
+    ↓ HTTPS
+sbgamers-api.ghmeshal7.workers.dev (Cloudflare Worker + KV)
+    ↓ HTTPS
+Decodo API (Smartproxy) → Amazon.sa data
+```
 
-## Accomplished
+## Verified Working Endpoints
 
-**COMPLETED:**
-- **MIGRATED TO CLOUDFLARE WORKERS**: Simplified API with KV caching
-- Built Cloudflare Worker with 3 main endpoints (categories, deals, category)
-- Implemented Cloudflare KV caching with TTL
-- Integrated Decodo (Smartproxy) API for Amazon data
-- Successfully deployed worker at `sbgamers-api.ghmeshal7.workers.dev`
-- Updated web frontend to use Cloudflare Worker API
-- Removed all CranL references
-- All changes committed and pushed
+- `GET /api/v1/health` - Health check
+- `GET /api/v1/categories` - Returns 6 gaming categories
+- `GET /api/v1/deals` - Returns GPU products with caching
+- `GET /api/v1/category/{slug}` - Returns products by category
 
-**VERIFIED WORKING:**
-- `/api/v1/health` - Health check endpoint
-- `/api/v1/categories` - Returns 6 gaming categories
-- `/api/v1/deals` - Returns GPU products from Decodo API
-- `/api/v1/category/[slug]` - Returns category products
+## Files Structure
 
-## Relevant files / directories
+**Cloudflare Worker (workers/):**
+- `src/index.ts` - Main worker code
+- `wrangler.toml` - Worker configuration
+- `package.json` - Dependencies
 
-**Cloudflare Worker (in `workers/` folder - DEPLOYED):**
-- `workers/src/index.ts` - Main worker with all API routes
-- `workers/wrangler.toml` - Worker configuration with KV binding
-- `workers/package.json` - Worker dependencies
+**Web Frontend (web/):**
+- `src/app/` - Next.js pages
+- `src/lib/api.ts` - API client (updated with Worker URL)
+- `src/components/` - React components
+- `.env.production` - Production environment variables
+- `package.json` - Dependencies
 
-**Web Frontend (in `web/` folder - READY):**
-- `web/src/app/page.tsx` - Home page with animated landing
-- `web/src/app/layout.tsx` - Root layout
-- `web/src/lib/api.ts` - API client connecting to Cloudflare Worker
-- `web/src/components/` - Navbar, Footer, ProductCard, etc.
-- `web/wrangler.toml` - Cloudflare Pages configuration
-- `web/.env.production` - Production environment variables
+## Next Action Required
 
-**Root:**
-- `package.json` - Workspace config
+**Set environment variable in Cloudflare Pages dashboard:**
+1. Go to: https://dash.cloudflare.com → Pages → sbgamers → Settings → Environment variables
+2. Add Production variable: `NEXT_PUBLIC_API_URL` = `https://sbgamers-api.ghmeshal7.workers.dev`
+3. Retry latest deployment or push new commit
 
-## Next Steps
-
-1. ✅ Cloudflare Worker API deployed and verified
-2. Deploy web frontend to Cloudflare Pages
-3. Test end-to-end: categories, deals, search functionality
+See `SETUP_COMPLETE.md` for detailed step-by-step instructions.
