@@ -8,10 +8,17 @@ import {
   cacheWarmerQueue,
   usageMonitorQueue,
   scheduleRecurringJobs,
+  closeQueues,
+  getQueueStats,
 } from './bull-queue'
 import { log } from '../utils/logger'
 
+let queuesInitialized = false
+
 export function initializeQueues(): void {
+  if (queuesInitialized) return
+  queuesInitialized = true
+
   priceSnapshotQueue.process(processPriceSnapshot)
   popularRefreshQueue.process(processPopularRefresh)
   cacheWarmerQueue.process(processCacheWarmer)
@@ -32,4 +39,4 @@ export {
   scheduleRecurringJobs,
   closeQueues,
   getQueueStats,
-} from './bull-queue'
+}
