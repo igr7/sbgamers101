@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(cd:*)",
+      "WebFetch(domain:sbgamers101-5amqpe.cranl.net)",
+      "WebFetch(domain:sbgamers.com)",
+      "WebFetch(domain:cranl.com)",
+      "WebSearch",
+      "Bash(grep:*)",
+      "WebFetch(domain:app.cranl.com)",
+      "Bash(curl:*)",
+      "Bash(curl -s -H \"Authorization: Bearer cranl_sk_rQpv1k7Cwg8wIoaiPktHj3TNlgSGGtbC\" \"https://app.cranl.com/api/applications/17567e28-6dd8-4180-92a7-322016036ef9\" 2>&1 | python3 -m json.tool 2>/dev/null || curl -s -H \"Authorization: Bearer cranl_sk_rQpv1k7Cwg8wIoaiPktHj3TNlgSGGtbC\" \"https://app.cranl.com/api/applications/17567e28-6dd8-4180-92a7-322016036ef9\" 2>&1)",
+      "Bash(echo:*)",
+      "Bash(python3:*)",
+      "Bash(node:*)",
+      "Bash(echo Deploy ID: $DEPLOY_ID:*)",
+      "Bash(cd /c/Users/Gr7/sbgamers101/api && DATABASE_URL=\"postgresql://gr7:i5fMUf0hZsxUwAhp8IgEbH1skPPwAKWo@sbgamers101-iatkrc:5432/gr7?sslmode=require\" npx prisma db push 2>&1)",
+      "Bash(cd /c/Users/Gr7/sbgamers101/api && DATABASE_URL=\"postgresql://gr7:i5fMUf0hZsxUwAhp8IgEbH1skPPwAKWo@sbgamers101-iatkrc:5432/gr7?sslmode=require\" ./node_modules/.bin/prisma db push 2>&1)",
+      "Bash(ls:*)",
+      "Bash(cd /c/Users/Gr7/sbgamers101/api && DATABASE_URL=\"postgresql://gr7:i5fMUf0hZsxUwAhp8IgEbH1skPPwAKWo@sbgamers101-iatkrc:5432/gr7?sslmode=require\" ../node_modules/.bin/prisma db push 2>&1)",
+      "Bash(cd /c/Users/Gr7/sbgamers101 && git add api/src/lib/omkar/omkar-client.ts api/src/app/api/v1/search/route.ts && git commit -m \"$\\(cat <<'EOF'\nSpeed up search: increase omkar timeout and async DB upserts\n\n- Increase omkar API timeout from 15s to 25s to handle slow responses\n- Make DB product upserts fire-and-forget to not block search response\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\" && git push 2>&1)",
+      "Bash(cd /c/Users/Gr7/sbgamers101 && git add api/src/app/api/v1/health/route.ts && git commit -m \"$\\(cat <<'EOF'\nAdd health check endpoint for debugging\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\" && git push 2>&1)",
+      "Bash(cd /c/Users/Gr7/sbgamers101 && git add api/src/lib/cache/redis-client.ts api/src/app/api/v1/health/route.ts && git commit -m \"$\\(cat <<'EOF'\nFix Redis connection: use lazy connect with timeouts\n\nRedis was blocking app startup with lazyConnect:false. Now uses\nlazy connect, short timeouts, and fewer retries so routes work\neven when Redis is unreachable.\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\" && git push 2>&1)",
+      "Bash(cd /c/Users/Gr7/sbgamers101 && git add api/next.config.mjs && git commit -m \"$\\(cat <<'EOF'\nRemove env block from next.config - use runtime env vars directly\n\nThe env:{} block in next.config.mjs was replacing process.env references\nwith build-time values, which were undefined on CranL. Server-side code\nshould read process.env directly at runtime instead.\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\" && git push 2>&1)",
+      "Bash(cd /c/Users/Gr7/sbgamers101 && git add api/next.config.mjs && git commit -m \"$\\(cat <<'EOF'\nUse standalone output for proper runtime env var access\n\nStandalone mode creates a self-contained server.js that reads\nenvironment variables at runtime instead of build time.\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\" && git push 2>&1)",
+      "Bash(cd /c/Users/Gr7/sbgamers101 && git add api/src/app/api/v1/health/route.ts api/next.config.mjs && git commit -m \"$\\(cat <<'EOF'\nDebug health endpoint and revert standalone mode\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\" && git push 2>&1)"
+    ]
+  }
+}

@@ -2,16 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { RedisKeys, CacheTTL, safeRedisGet, safeRedisSetex } from '@/lib/cache/redis-client'
 import { generateSearchHash } from '@/lib/cache/cache-manager'
-import { getDeals, DealsQueryParams, DealProduct } from '@/lib/deals/deals-engine'
+import { DealsQueryParams, DealProduct } from '@/lib/deals/deals-engine'
 import { omkarApi, mapOmkarSearchResult } from '@/lib/omkar/omkar-client'
 import { log } from '@/lib/utils/logger'
-
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<never>((_, reject) => setTimeout(() => reject(new Error('DB_TIMEOUT')), ms)),
-  ])
-}
 
 const GAMING_SEARCH_QUERIES = [
   'gaming headset',
@@ -25,7 +18,7 @@ const GAMING_SEARCH_QUERIES = [
 ]
 
 const dealsQuerySchema = z.object({
-  min_discount: z.coerce.number().int().min(0).max(100).default(10),
+  min_discount: z.coerce.number().int().min(0).max(100).default(0),
   min_rating: z.coerce.number().min(0).max(5).default(0),
   sort: z
     .enum(['biggest_discount', 'lowest_price', 'highest_rating', 'most_reviewed'])
@@ -72,7 +65,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<DealsRespo
   try {
     const { searchParams } = new URL(request.url)
     const params = {
-      min_discount: searchParams.get('min_discount') || '10',
+      min_discount: searchParams.get('min_discount') || '0',
       min_rating: searchParams.get('min_rating') || '0',
       sort: searchParams.get('sort') || 'biggest_discount',
       prime_only: searchParams.get('prime_only') || 'false',
@@ -112,96 +105,48 @@ export async function GET(request: NextRequest): Promise<NextResponse<DealsRespo
       return response
     }
 
-    const queryParams: DealsQueryParams = {
-      min_discount: validated.min_discount,
-      min_rating: validated.min_rating,
-      sort: validated.sort,
-      prime_only: validated.prime_only,
-      best_seller_only: validated.best_seller_only,
-      page: validated.page,
-      limit: validated.limit,
-    }
+    // Use Omkar API directly (fastest, most reliable)
+    const queryIndex = ((validated.page - 1) % GAMING_SEARCH_QUERIES.length)
+    const searchQuery = GAMING_SEARCH_QUERIES[queryIndex]
+    const searchResult = await omkarApi.search(searchQuery, validated.page, 'best-sellers')
+    const mapped = mapOmkarSearchResult(searchResult.results || [])
 
-    let responseData: {
-      total_count: number
-      page: number
-      total_pages: number
-      database_building?: boolean
-      filters_applied: Record<string, unknown>
-      deals: DealProduct[]
-    }
-    let source = 'database'
-
-    try {
-      const result = await withTimeout(getDeals(queryParams), 8000)
-
-      if (result.deals.length === 0) {
-        throw new Error('DB_EMPTY')
-      }
-
-      responseData = {
-        total_count: result.total_count,
-        page: result.page,
-        total_pages: result.total_pages,
-        database_building: result.database_building,
-        filters_applied: {
-          min_discount: validated.min_discount,
-          min_rating: validated.min_rating,
-          sort: validated.sort,
-          prime_only: validated.prime_only,
-          best_seller_only: validated.best_seller_only,
-        },
-        deals: result.deals,
-      }
-    } catch (dbError) {
-      log.warn('DB unavailable for deals, falling back to omkar API', {
-        error: dbError instanceof Error ? dbError.message : 'Unknown',
+    const deals: DealProduct[] = mapped
+      .filter((p) => {
+        if (validated.min_discount > 0 && (p.discount_percentage || 0) < validated.min_discount) return false
+        if (validated.min_rating > 0 && (p.rating || 0) < validated.min_rating) return false
+        if (validated.prime_only && !p.is_prime) return false
+        if (validated.best_seller_only && !p.is_best_seller) return false
+        return true
       })
+      .slice(0, validated.limit)
+      .map((p) => ({
+        asin: p.asin,
+        title: p.title,
+        main_image: p.image_url,
+        price: p.price,
+        original_price: p.original_price,
+        discount_percentage: p.discount_percentage,
+        rating: p.rating,
+        ratings_count: p.ratings_count,
+        is_prime: p.is_prime,
+        is_best_seller: p.is_best_seller,
+        is_amazon_choice: p.is_amazon_choice,
+        currency: 'SAR',
+        is_near_all_time_low: false,
+        all_time_low_price: null,
+        price_trend_7d: null,
+      }))
 
-      // Fallback: search omkar for gaming products
-      const queryIndex = ((validated.page - 1) % GAMING_SEARCH_QUERIES.length)
-      const searchQuery = GAMING_SEARCH_QUERIES[queryIndex]
-      const searchResult = await omkarApi.search(searchQuery, validated.page, 'best-sellers')
-      const mapped = mapOmkarSearchResult(searchResult.results || [])
-
-      const deals: DealProduct[] = mapped
-        .filter((p) => {
-          if (validated.min_discount > 0 && (p.discount_percentage || 0) < validated.min_discount) return false
-          if (validated.min_rating > 0 && (p.rating || 0) < validated.min_rating) return false
-          if (validated.prime_only && !p.is_prime) return false
-          if (validated.best_seller_only && !p.is_best_seller) return false
-          return true
-        })
-        .slice(0, validated.limit)
-        .map((p) => ({
-          asin: p.asin,
-          title: p.title,
-          main_image: p.image_url,
-          price: p.price,
-          original_price: p.original_price,
-          discount_percentage: p.discount_percentage,
-          rating: p.rating,
-          ratings_count: p.ratings_count,
-          is_prime: p.is_prime,
-          is_best_seller: p.is_best_seller,
-          is_amazon_choice: p.is_amazon_choice,
-          currency: 'SAR',
-          is_near_all_time_low: false,
-          all_time_low_price: null,
-          price_trend_7d: null,
-        }))
-
-      responseData = {
-        total_count: deals.length,
-        page: validated.page,
-        total_pages: Math.max(1, Math.ceil((searchResult.total_results || deals.length) / validated.limit)),
-        filters_applied: {
-          min_discount: validated.min_discount,
-          sort: validated.sort,
-        },
-        deals,
-      }
-      source = 'omkar_fallback'
+    const responseData = {
+      total_count: searchResult.total_results || deals.length,
+      page: validated.page,
+      total_pages: Math.max(1, Math.ceil((searchResult.total_results || deals.length) / validated.limit)),
+      filters_applied: {
+        min_discount: validated.min_discount,
+        sort: validated.sort,
+      },
+      deals,
     }
 
     safeRedisSetex(
@@ -219,7 +164,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<DealsRespo
       cached: false,
       stale: false,
       cache_age_seconds: 0,
-      source,
+      source: 'omkar_api',
     })
     addCacheHeaders(response, false, 0, CacheTTL.deals, false)
     return response
