@@ -3,7 +3,15 @@ import { z } from 'zod'
 import { RedisKeys, CacheTTL, safeRedisGet, safeRedisSetex } from '@/lib/cache/redis-client'
 import { generateSearchHash } from '@/lib/cache/cache-manager'
 import { getProducts, ProductsQueryParams, DealProduct } from '@/lib/deals/deals-engine'
+import { omkarApi, mapOmkarSearchResult } from '@/lib/omkar/omkar-client'
 import { log } from '@/lib/utils/logger'
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => setTimeout(() => reject(new Error('DB_TIMEOUT')), ms)),
+  ])
+}
 
 const productsQuerySchema = z.object({
   sort: z
@@ -121,14 +129,79 @@ export async function GET(request: NextRequest): Promise<NextResponse<ProductsRe
       limit: validated.limit,
     }
 
-    const result = await getProducts(queryParams)
+    let responseData: {
+      total_count: number
+      page: number
+      total_pages: number
+      filters_applied: Record<string, unknown>
+      products: DealProduct[]
+    }
+    let source = 'database'
 
-    const responseData = {
-      total_count: result.total_count,
-      page: result.page,
-      total_pages: result.total_pages,
-      filters_applied: result.filters_applied,
-      products: result.products,
+    try {
+      const result = await withTimeout(getProducts(queryParams), 8000)
+
+      if (result.products.length === 0) {
+        throw new Error('DB_EMPTY')
+      }
+
+      responseData = {
+        total_count: result.total_count,
+        page: result.page,
+        total_pages: result.total_pages,
+        filters_applied: result.filters_applied,
+        products: result.products,
+      }
+    } catch (dbError) {
+      log.warn('DB unavailable for products, falling back to omkar API', {
+        error: dbError instanceof Error ? dbError.message : 'Unknown',
+      })
+
+      const omkarSort = validated.sort === 'price_asc' ? 'price-low-to-high'
+        : validated.sort === 'price_desc' ? 'price-high-to-low'
+        : validated.sort === 'rating_desc' ? 'reviews'
+        : 'best-sellers'
+
+      const searchResult = await omkarApi.search('gaming', validated.page, omkarSort)
+      const mapped = mapOmkarSearchResult(searchResult.results || [])
+
+      const products: DealProduct[] = mapped
+        .filter((p) => {
+          if (validated.min_price !== undefined && (p.price || 0) < validated.min_price) return false
+          if (validated.max_price !== undefined && (p.price || 0) > validated.max_price) return false
+          if (validated.min_rating !== undefined && (p.rating || 0) < validated.min_rating) return false
+          if (validated.min_discount !== undefined && (p.discount_percentage || 0) < validated.min_discount) return false
+          if (validated.prime_only && !p.is_prime) return false
+          if (validated.best_seller_only && !p.is_best_seller) return false
+          return true
+        })
+        .slice(0, validated.limit)
+        .map((p) => ({
+          asin: p.asin,
+          title: p.title,
+          main_image: p.image_url,
+          price: p.price,
+          original_price: p.original_price,
+          discount_percentage: p.discount_percentage,
+          rating: p.rating,
+          ratings_count: p.ratings_count,
+          is_prime: p.is_prime,
+          is_best_seller: p.is_best_seller,
+          is_amazon_choice: p.is_amazon_choice,
+          currency: 'SAR',
+          is_near_all_time_low: false,
+          all_time_low_price: null,
+          price_trend_7d: null,
+        }))
+
+      responseData = {
+        total_count: products.length,
+        page: validated.page,
+        total_pages: Math.max(1, Math.ceil((searchResult.total_results || products.length) / validated.limit)),
+        filters_applied: { sort: validated.sort },
+        products,
+      }
+      source = 'omkar_fallback'
     }
 
     safeRedisSetex(
@@ -146,7 +219,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<ProductsRe
       cached: false,
       stale: false,
       cache_age_seconds: 0,
-      source: 'database',
+      source,
     })
     addCacheHeaders(response, false, 0, CacheTTL.deals, false)
     return response
