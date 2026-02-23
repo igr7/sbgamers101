@@ -111,6 +111,18 @@
   .glow-line {
     @apply h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent;
   }
+
+  .range-slider {
+    @apply appearance-none w-full h-1.5 bg-white/10 rounded-full outline-none;
+  }
+
+  .range-slider::-webkit-slider-thumb {
+    @apply appearance-none w-4 h-4 bg-emerald-500 rounded-full cursor-pointer;
+  }
+
+  .toggle-switch {
+    @apply relative inline-flex items-center h-6 w-11 rounded-full cursor-pointer transition-colors duration-200;
+  }
 }
 
 [dir="rtl"] {
@@ -154,4 +166,8 @@
   background: linear-gradient(90deg, transparent 25%, rgba(255,255,255,0.03) 50%, transparent 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
+}
+
+.skeleton {
+  @apply bg-gray-800/50 rounded-lg animate-pulse;
 }

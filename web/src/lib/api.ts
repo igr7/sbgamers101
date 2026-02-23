@@ -22,6 +22,32 @@ export interface Product {
   last_updated: string;
 }
 
+export interface ProductFull extends Product {
+  brand: string;
+  description: string;
+  key_features: string[];
+  images: string[];
+  availability: string;
+  is_prime: boolean;
+  is_best_seller: boolean;
+  is_amazon_choice: boolean;
+  top_reviews: Array<{
+    review_id: string;
+    reviewer_name: string;
+    rating: number;
+    review_title: string;
+    review_text: string;
+    review_date: string;
+    is_verified_purchase: boolean;
+  }>;
+  frequently_bought_together: Array<{
+    asin: string;
+    title: string;
+    price: number;
+    image_url: string;
+  }>;
+}
+
 export interface PriceHistoryEntry {
   price: number;
   recorded_at: string;
@@ -143,19 +169,43 @@ export const api = {
     };
   },
 
-  getProduct: async (asin: string): Promise<Product | null> => {
+  getProduct: async (asin: string): Promise<ProductFull | null> => {
     const res = await fetchApi<{
       success: boolean;
       data: {
         asin: string;
         title: string | null;
+        brand: string | null;
+        description: string | null;
+        key_features: string[];
         main_image: string | null;
+        images: string[];
         price: number | null;
         original_price: number | null;
         discount_percentage: number | null;
         rating: number | null;
         ratings_count: number | null;
         category_hierarchy: string | null;
+        availability: string | null;
+        is_prime: boolean;
+        is_best_seller: boolean;
+        is_amazon_choice: boolean;
+        top_reviews: Array<{
+          review_id: string;
+          reviewer_name: string;
+          rating: number;
+          review_title: string;
+          review_text: string;
+          review_date: string;
+          is_verified_purchase: boolean;
+        }>;
+        frequently_bought_together: Array<{
+          asin: string;
+          title: string;
+          price: number;
+          image_url: string;
+        }>;
+        fetched_at: string;
       };
     }>(`/product/${asin}`);
 
@@ -164,7 +214,11 @@ export const api = {
     return {
       asin: res.data.asin,
       title: res.data.title || '',
+      brand: res.data.brand || '',
+      description: res.data.description || '',
+      key_features: res.data.key_features || [],
       image_url: res.data.main_image || '',
+      images: res.data.images || [],
       current_price: res.data.price || 0,
       original_price: res.data.original_price || 0,
       discount_pct: res.data.discount_percentage || 0,
@@ -172,8 +226,14 @@ export const api = {
       ratings_total: res.data.ratings_count || 0,
       category_slug: '',
       category_name: res.data.category_hierarchy || '',
-      amazon_url: `https://www.amazon.sa/dp/${res.data.asin}`,
-      last_updated: new Date().toISOString(),
+      amazon_url: `https://www.amazon.sa/dp/${res.data.asin}?tag=sbgamers-21`,
+      last_updated: res.data.fetched_at || new Date().toISOString(),
+      availability: res.data.availability || '',
+      is_prime: res.data.is_prime || false,
+      is_best_seller: res.data.is_best_seller || false,
+      is_amazon_choice: res.data.is_amazon_choice || false,
+      top_reviews: res.data.top_reviews || [],
+      frequently_bought_together: res.data.frequently_bought_together || [],
     };
   },
 
