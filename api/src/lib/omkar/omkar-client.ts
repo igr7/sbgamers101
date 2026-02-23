@@ -1,19 +1,5 @@
 import axios, { AxiosError } from 'axios'
 import { log } from '../utils/logger'
-import type { PrismaClient } from '@prisma/client'
-
-let prisma: PrismaClient | null = null
-async function getPrisma(): Promise<PrismaClient | null> {
-  if (!prisma) {
-    try {
-      const { prisma: prismaClient } = await import('../db/prisma-client')
-      prisma = prismaClient
-    } catch {
-      return null
-    }
-  }
-  return prisma
-}
 
 const OMKAR_API_BASE = process.env.OMKAR_API_BASE || 'https://amazon-scraper-api.omkar.cloud'
 const OMKAR_API_KEY = process.env.OMKAR_API_KEY || ''
@@ -116,22 +102,7 @@ async function logUsage(
   status: string,
   responseMs: number
 ): Promise<void> {
-  const p = await getPrisma()
-  if (!p) return
-  p.apiUsageLog.create({
-    data: {
-      endpoint,
-      asin: params.asin,
-      query: params.query,
-      status,
-      response_ms: responseMs,
-    },
-  }).catch((error) => {
-    log.error('Failed to log API usage', {
-      endpoint,
-      error: error instanceof Error ? error.message : 'Unknown',
-    })
-  })
+  log.debug('API usage', { endpoint, ...params, status, responseMs })
 }
 
 function parsePrice(price: string | number | undefined): number | null {
