@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { redis, RedisKeys, CacheTTL } from '@/lib/cache/redis-client'
+import { RedisKeys, CacheTTL, safeRedisGet, safeRedisSetex } from '@/lib/cache/redis-client'
 import { generateSearchHash } from '@/lib/cache/cache-manager'
 import { getProducts, ProductsQueryParams, DealProduct } from '@/lib/deals/deals-engine'
 import { log } from '@/lib/utils/logger'
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<ProductsRe
     const searchHash = generateSearchHash({ ...validated, endpoint: 'products' })
     const cacheKey = RedisKeys.products(searchHash)
 
-    const cachedData = await redis.get(cacheKey)
+    const cachedData = await safeRedisGet(cacheKey)
     if (cachedData) {
       const parsed = JSON.parse(cachedData) as {
         data: {
@@ -131,7 +131,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<ProductsRe
       products: result.products,
     }
 
-    await redis.setex(
+    safeRedisSetex(
       cacheKey,
       CacheTTL.deals,
       JSON.stringify({

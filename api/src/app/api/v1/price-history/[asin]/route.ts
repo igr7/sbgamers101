@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { redis, RedisKeys, CacheTTL } from '@/lib/cache/redis-client'
+import { RedisKeys, CacheTTL, safeRedisGet, safeRedisSetex } from '@/lib/cache/redis-client'
 import { getPriceHistory, PriceHistoryStats } from '@/lib/price-history/price-analyzer'
 import { fetchAndSaveProduct } from '@/lib/omkar/product-fetcher'
 import { prisma } from '@/lib/db/prisma-client'
@@ -60,7 +60,7 @@ export async function GET(
     const days = validated.days === -1 ? 0 : validated.days
 
     const cacheKey = `${RedisKeys.productPrice(validatedAsin)}:history:${days}:${validated.interval}`
-    const cachedData = await redis.get(cacheKey)
+    const cachedData = await safeRedisGet(cacheKey)
 
     if (cachedData) {
       const parsed = JSON.parse(cachedData) as {
@@ -103,7 +103,7 @@ export async function GET(
       const initialStats = await getPriceHistory(validatedAsin, days, validated.interval)
       initialStats.tracking_started = true
 
-      await redis.setex(
+      safeRedisSetex(
         cacheKey,
         CacheTTL.price,
         JSON.stringify({
@@ -126,7 +126,7 @@ export async function GET(
 
     const historyStats = await getPriceHistory(validatedAsin, days, validated.interval)
 
-    await redis.setex(
+    safeRedisSetex(
       cacheKey,
       CacheTTL.price,
       JSON.stringify({

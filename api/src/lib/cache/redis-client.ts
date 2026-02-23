@@ -45,6 +45,30 @@ export async function checkRedisConnection(): Promise<boolean> {
   }
 }
 
+// Safe Redis operations that fail fast (2s timeout) and return null instead of hanging
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
+  return Promise.race([
+    promise,
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
+  ])
+}
+
+export async function safeRedisGet(key: string): Promise<string | null> {
+  try {
+    return await withTimeout(redis.get(key), 2000)
+  } catch {
+    return null
+  }
+}
+
+export async function safeRedisSetex(key: string, ttl: number, value: string): Promise<void> {
+  try {
+    await withTimeout(redis.setex(key, ttl, value), 2000)
+  } catch {
+    // silently fail - caching is optional
+  }
+}
+
 export const RedisKeys = {
   productFull: (asin: string): string => `product:${asin}:full`,
   productPrice: (asin: string): string => `product:${asin}:price`,

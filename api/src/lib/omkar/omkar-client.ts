@@ -97,28 +97,27 @@ interface OmkarReviewsResponse {
   ratings_breakdown?: Record<string, number | string>
 }
 
-async function logUsage(
+function logUsage(
   endpoint: string,
   params: { asin?: string; query?: string },
   status: string,
   responseMs: number
-): Promise<void> {
-  try {
-    await prisma.apiUsageLog.create({
-      data: {
-        endpoint,
-        asin: params.asin,
-        query: params.query,
-        status,
-        response_ms: responseMs,
-      },
-    })
-  } catch (error) {
+): void {
+  // Fire-and-forget: never block the response on usage logging
+  prisma.apiUsageLog.create({
+    data: {
+      endpoint,
+      asin: params.asin,
+      query: params.query,
+      status,
+      response_ms: responseMs,
+    },
+  }).catch((error) => {
     log.error('Failed to log API usage', {
       endpoint,
       error: error instanceof Error ? error.message : 'Unknown',
     })
-  }
+  })
 }
 
 function parsePrice(price: string | number | undefined): number | null {
@@ -136,10 +135,10 @@ export const omkarApi = {
       const res = await client.get('/amazon/product-details', {
         params: { asin, country_code: 'SA' },
       })
-      await logUsage('product-details', { asin }, 'success', Date.now() - start)
+      logUsage('product-details', { asin }, 'success', Date.now() - start)
       return res.data
     } catch (error) {
-      await logUsage('product-details', { asin }, 'error', Date.now() - start)
+      logUsage('product-details', { asin }, 'error', Date.now() - start)
       const axiosError = error as AxiosError
       log.error('omkar.cloud product fetch failed', {
         asin,
@@ -165,10 +164,10 @@ export const omkarApi = {
           sort_by: sortBy,
         },
       })
-      await logUsage('search', { query }, 'success', Date.now() - start)
+      logUsage('search', { query }, 'success', Date.now() - start)
       return res.data
     } catch (error) {
-      await logUsage('search', { query }, 'error', Date.now() - start)
+      logUsage('search', { query }, 'error', Date.now() - start)
       const axiosError = error as AxiosError
       log.error('omkar.cloud search failed', {
         query,
@@ -185,10 +184,10 @@ export const omkarApi = {
       const res = await client.get('/amazon/product-reviews/top', {
         params: { asin, country_code: 'SA' },
       })
-      await logUsage('reviews', { asin }, 'success', Date.now() - start)
+      logUsage('reviews', { asin }, 'success', Date.now() - start)
       return res.data
     } catch (error) {
-      await logUsage('reviews', { asin }, 'error', Date.now() - start)
+      logUsage('reviews', { asin }, 'error', Date.now() - start)
       const axiosError = error as AxiosError
       log.error('omkar.cloud reviews fetch failed', {
         asin,
@@ -209,10 +208,10 @@ export const omkarApi = {
           page,
         },
       })
-      await logUsage('category', { query: categoryId }, 'success', Date.now() - start)
+      logUsage('category', { query: categoryId }, 'success', Date.now() - start)
       return res.data
     } catch (error) {
-      await logUsage('category', { query: categoryId }, 'error', Date.now() - start)
+      logUsage('category', { query: categoryId }, 'error', Date.now() - start)
       const axiosError = error as AxiosError
       log.error('omkar.cloud category fetch failed', {
         categoryId,

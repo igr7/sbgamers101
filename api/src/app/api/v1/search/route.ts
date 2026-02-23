@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { redis, RedisKeys, CacheTTL } from '@/lib/cache/redis-client'
+import { RedisKeys, CacheTTL, safeRedisGet, safeRedisSetex } from '@/lib/cache/redis-client'
 import { generateSearchHash, getCachedOrFetch } from '@/lib/cache/cache-manager'
 import { omkarApi, mapOmkarSearchResult, SearchProductResult } from '@/lib/omkar/omkar-client'
 import { prisma } from '@/lib/db/prisma-client'
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<SearchResp
     const searchHash = generateSearchHash(validated)
     const cacheKey = RedisKeys.search(searchHash)
 
-    const cachedData = await redis.get(cacheKey)
+    const cachedData = await safeRedisGet(cacheKey)
     if (cachedData) {
       const parsed = JSON.parse(cachedData) as {
         data: { products: SearchProductResult[]; total: number }
@@ -181,7 +181,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<SearchResp
       data: { products, total: products.length },
       metadata: { cachedAt: Date.now(), ttl: CacheTTL.search, compressed: false },
     }
-    await redis.setex(cacheKey, CacheTTL.search, JSON.stringify(cacheData))
+    safeRedisSetex(cacheKey, CacheTTL.search, JSON.stringify(cacheData))
 
     const responseTime = Date.now() - startTime
     log.info('Search completed', {

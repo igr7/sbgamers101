@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { redis, CacheTTL } from '@/lib/cache/redis-client'
+import { CacheTTL, safeRedisGet, safeRedisSetex } from '@/lib/cache/redis-client'
 
 interface Category {
   id: string
@@ -27,7 +27,7 @@ const CACHE_KEY = 'categories:all'
 
 export async function GET() {
   try {
-    const cachedData = await redis.get(CACHE_KEY)
+    const cachedData = await safeRedisGet(CACHE_KEY)
     if (cachedData) {
       const parsed = JSON.parse(cachedData) as {
         data: Category[]
@@ -41,7 +41,7 @@ export async function GET() {
       })
     }
 
-    await redis.setex(
+    safeRedisSetex(
       CACHE_KEY,
       CacheTTL.categories,
       JSON.stringify({

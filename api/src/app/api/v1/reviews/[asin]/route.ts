@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { redis, RedisKeys, CacheTTL } from '@/lib/cache/redis-client'
+import { RedisKeys, CacheTTL, safeRedisGet, safeRedisSetex } from '@/lib/cache/redis-client'
 import { omkarApi, mapOmkarReviewsResponse, ReviewsResponse } from '@/lib/omkar/omkar-client'
 import { log } from '@/lib/utils/logger'
 
@@ -42,7 +42,7 @@ export async function GET(
     const validatedAsin = asinSchema.parse(asin.toUpperCase())
 
     const cacheKey = RedisKeys.reviews(validatedAsin)
-    const cachedData = await redis.get(cacheKey)
+    const cachedData = await safeRedisGet(cacheKey)
 
     if (cachedData) {
       const parsed = JSON.parse(cachedData) as {
@@ -66,7 +66,7 @@ export async function GET(
     const rawReviews = await omkarApi.getReviews(validatedAsin)
     const reviewsData = mapOmkarReviewsResponse(rawReviews, validatedAsin)
 
-    await redis.setex(
+    safeRedisSetex(
       cacheKey,
       CacheTTL.reviews,
       JSON.stringify({

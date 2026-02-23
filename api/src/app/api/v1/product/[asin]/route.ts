@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db/prisma-client'
-import { redis, RedisKeys, CacheTTL } from '@/lib/cache/redis-client'
+import { RedisKeys, CacheTTL, safeRedisGet, safeRedisSetex } from '@/lib/cache/redis-client'
 import { fetchAndSaveProduct, getStoredProduct } from '@/lib/omkar/product-fetcher'
 import { getMonthlyUsageStats } from '@/lib/omkar/usage-tracker'
 import { log } from '@/lib/utils/logger'
@@ -66,7 +66,7 @@ export async function GET(
     const validatedAsin = asinSchema.parse(asin.toUpperCase())
 
     const cacheKey = RedisKeys.productFull(validatedAsin)
-    const cachedData = await redis.get(cacheKey)
+    const cachedData = await safeRedisGet(cacheKey)
 
     if (cachedData) {
       const parsed = JSON.parse(cachedData) as {
@@ -144,7 +144,7 @@ export async function GET(
       )
     }
 
-    await redis.setex(
+    safeRedisSetex(
       cacheKey,
       CacheTTL.product,
       JSON.stringify({
