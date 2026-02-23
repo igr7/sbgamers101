@@ -5,16 +5,19 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "pages:build": "npx @cloudflare/next-on-pages",
     "start": "next start -H 0.0.0.0 -p $PORT"
   },
   "dependencies": {
+    "framer-motion": "^12.34.3",
     "lucide-react": "^0.400.0",
-    "next": "14.2.15",
+    "next": "15.0.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "recharts": "^2.12.0"
   },
   "devDependencies": {
+    "@cloudflare/next-on-pages": "^1.13.16",
     "@types/node": "^22.0.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
