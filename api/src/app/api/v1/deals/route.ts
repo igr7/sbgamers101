@@ -1,29 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { RedisKeys, CacheTTL, safeRedisGet, safeRedisSetex } from '@/lib/cache/redis-client'
-import { generateSearchHash } from '@/lib/cache/cache-manager'
-import { omkarApi, mapOmkarSearchResult } from '@/lib/omkar/omkar-client'
+import { safeRedisGet, safeRedisSetex } from '@/lib/cache/redis-client'
+import { decodoApi, mapDecodoSearchResult, AMAZON_SA_CATEGORIES } from '@/lib/decodo/decodo-client'
 import { log } from '@/lib/utils/logger'
 
-const GAMING_SEARCH_QUERIES = [
-  'gaming headset',
-  'gaming keyboard',
-  'gaming mouse',
-  'RTX graphics card',
-  'gaming monitor',
-  'gaming chair',
-  'RGB RAM',
-  'gaming laptop',
-]
+const CACHE_TTL = 900
 
 const dealsQuerySchema = z.object({
   min_discount: z.coerce.number().int().min(0).max(100).default(0),
   min_rating: z.coerce.number().min(0).max(5).default(0),
-  sort: z
-    .enum(['biggest_discount', 'lowest_price', 'highest_rating', 'most_reviewed'])
-    .default('biggest_discount'),
-  prime_only: z.preprocess((val) => val === 'true' || val === true, z.boolean()).default(false),
-  best_seller_only: z.preprocess((val) => val === 'true' || val === true, z.boolean()).default(false),
+  sort: z.enum(['biggest_discount', 'lowest_price', 'highest_rating', 'most_reviewed']).default('biggest_discount'),
+  category: z.string().optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 })
@@ -41,9 +28,9 @@ interface DealProduct {
   is_best_seller: boolean
   is_amazon_choice: boolean
   currency: string
-  is_near_all_time_low: boolean
-  all_time_low_price: number | null
-  price_trend_7d: string | null
+  amazon_url: string
+  category_slug: string
+  category_name: string
 }
 
 interface DealsResponse {
@@ -52,30 +39,14 @@ interface DealsResponse {
     total_count: number
     page: number
     total_pages: number
-    database_building?: boolean
     filters_applied: Record<string, unknown>
     deals: DealProduct[]
   }
   cached?: boolean
-  stale?: boolean
   cache_age_seconds?: number
   source?: string
   error?: string
   message?: string
-}
-
-function addCacheHeaders(
-  response: NextResponse,
-  cached: boolean,
-  cacheAge: number,
-  ttl: number,
-  stale: boolean
-): void {
-  response.headers.set('X-Cache', cached ? 'HIT' : 'MISS')
-  response.headers.set('X-Cache-Age', String(cacheAge))
-  response.headers.set('X-Cache-TTL', String(ttl))
-  response.headers.set('X-Stale', stale ? 'true' : 'false')
-  response.headers.set('Cache-Control', 'public, max-age=300')
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse<DealsResponse>> {
@@ -85,129 +56,129 @@ export async function GET(request: NextRequest): Promise<NextResponse<DealsRespo
       min_discount: searchParams.get('min_discount') || '0',
       min_rating: searchParams.get('min_rating') || '0',
       sort: searchParams.get('sort') || 'biggest_discount',
-      prime_only: searchParams.get('prime_only') || 'false',
-      best_seller_only: searchParams.get('best_seller_only') || 'false',
+      category: searchParams.get('category') || undefined,
       page: searchParams.get('page') || '1',
       limit: searchParams.get('limit') || '20',
     }
 
     const validated = dealsQuerySchema.parse(params)
-    const searchHash = generateSearchHash({ ...validated, endpoint: 'deals' })
-    const cacheKey = RedisKeys.deals(searchHash)
+    const cacheKey = `deals:${validated.category || 'all'}:${validated.page}:${validated.min_discount}:${validated.sort}`
 
     const cachedData = await safeRedisGet(cacheKey)
     if (cachedData) {
-      const parsed = JSON.parse(cachedData) as {
-        data: {
-          deals: DealProduct[]
-          total_count: number
-          page: number
-          total_pages: number
-          database_building: boolean
-          filters_applied: Record<string, unknown>
-        }
-        metadata: { cachedAt: number }
-      }
+      const parsed = JSON.parse(cachedData)
       const cacheAge = Math.floor((Date.now() - parsed.metadata.cachedAt) / 1000)
-
-      const response = NextResponse.json({
+      return NextResponse.json({
         success: true,
         data: parsed.data,
         cached: true,
-        stale: false,
         cache_age_seconds: cacheAge,
         source: 'cache',
       })
-      addCacheHeaders(response, true, cacheAge, CacheTTL.deals, false)
-      return response
     }
 
-    const queryIndex = ((validated.page - 1) % GAMING_SEARCH_QUERIES.length)
-    const searchQuery = GAMING_SEARCH_QUERIES[queryIndex]
-    const searchResult = await omkarApi.search(searchQuery, validated.page, 'best_sellers')
-    const mapped = mapOmkarSearchResult(searchResult.results || [])
+    const allDeals: DealProduct[] = []
+    const categoriesToFetch = validated.category
+      ? [validated.category]
+      : Object.keys(AMAZON_SA_CATEGORIES)
 
-    const deals: DealProduct[] = mapped
-      .filter((p) => {
-        if (validated.min_discount > 0 && (p.discount_percentage || 0) < validated.min_discount) return false
-        if (validated.min_rating > 0 && (p.rating || 0) < validated.min_rating) return false
-        if (validated.prime_only && !p.is_prime) return false
-        if (validated.best_seller_only && !p.is_best_seller) return false
-        return true
-      })
-      .slice(0, validated.limit)
-      .map((p) => ({
-        asin: p.asin,
-        title: p.title,
-        main_image: p.image_url,
-        price: p.price,
-        original_price: p.original_price,
-        discount_percentage: p.discount_percentage,
-        rating: p.rating,
-        ratings_count: p.ratings_count,
-        is_prime: p.is_prime,
-        is_best_seller: p.is_best_seller,
-        is_amazon_choice: p.is_amazon_choice,
-        currency: 'SAR',
-        is_near_all_time_low: false,
-        all_time_low_price: null,
-        price_trend_7d: null,
-      }))
+    for (const catSlug of categoriesToFetch.slice(0, 5)) {
+      const category = AMAZON_SA_CATEGORIES[catSlug as keyof typeof AMAZON_SA_CATEGORIES]
+      if (!category) continue
+
+      try {
+        const searchResult = await decodoApi.search(category.name_en, validated.page)
+        const organicResults = searchResult.results?.results?.organic || []
+        
+        for (const item of organicResults) {
+          const mapped = mapDecodoSearchResult(item)
+          
+          if (validated.min_discount > 0 && (mapped.discount_percentage || 0) < validated.min_discount) continue
+          if (validated.min_rating > 0 && (mapped.rating || 0) < validated.min_rating) continue
+
+          allDeals.push({
+            asin: mapped.asin,
+            title: mapped.title,
+            main_image: mapped.image_url,
+            price: mapped.price,
+            original_price: mapped.original_price,
+            discount_percentage: mapped.discount_percentage,
+            rating: mapped.rating,
+            ratings_count: mapped.ratings_count,
+            is_prime: mapped.is_prime,
+            is_best_seller: mapped.is_best_seller,
+            is_amazon_choice: mapped.is_amazon_choice,
+            currency: mapped.currency,
+            amazon_url: mapped.amazon_url,
+            category_slug: catSlug,
+            category_name: category.name_en,
+          })
+        }
+      } catch (err) {
+        log.warn('Failed to fetch deals for category', { category: catSlug, error: err instanceof Error ? err.message : 'Unknown' })
+      }
+    }
+
+    let sortedDeals = allDeals
+    switch (validated.sort) {
+      case 'biggest_discount':
+        sortedDeals = allDeals.sort((a, b) => (b.discount_percentage || 0) - (a.discount_percentage || 0))
+        break
+      case 'lowest_price':
+        sortedDeals = allDeals.sort((a, b) => (a.price || 0) - (b.price || 0))
+        break
+      case 'highest_rating':
+        sortedDeals = allDeals.sort((a, b) => (b.rating || 0) - (a.rating || 0))
+        break
+      case 'most_reviewed':
+        sortedDeals = allDeals.sort((a, b) => (b.ratings_count || 0) - (a.ratings_count || 0))
+        break
+    }
+
+    const paginatedDeals = sortedDeals.slice(0, validated.limit)
+    const totalCount = allDeals.length
+    const totalPages = Math.ceil(totalCount / validated.limit)
 
     const responseData = {
-      total_count: searchResult.total_results || deals.length,
+      total_count: totalCount,
       page: validated.page,
-      total_pages: Math.max(1, Math.ceil((searchResult.total_results || deals.length) / validated.limit)),
-      database_building: false,
+      total_pages: totalPages,
       filters_applied: {
         min_discount: validated.min_discount,
+        min_rating: validated.min_rating,
         sort: validated.sort,
+        category: validated.category,
       },
-      deals,
+      deals: paginatedDeals,
     }
 
     safeRedisSetex(
       cacheKey,
-      CacheTTL.deals,
+      CACHE_TTL,
       JSON.stringify({
         data: responseData,
-        metadata: { cachedAt: Date.now(), ttl: CacheTTL.deals, compressed: false },
+        metadata: { cachedAt: Date.now(), ttl: CACHE_TTL },
       })
     )
 
-    const response = NextResponse.json({
+    return NextResponse.json({
       success: true,
       data: responseData,
       cached: false,
-      stale: false,
       cache_age_seconds: 0,
-      source: 'omkar_api',
+      source: 'decodo_api',
     })
-    addCacheHeaders(response, false, 0, CacheTTL.deals, false)
-    return response
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'VALIDATION_ERROR',
-          message: error.errors[0].message,
-        },
+        { success: false, error: 'VALIDATION_ERROR', message: error.errors[0].message },
         { status: 400 }
       )
     }
 
-    log.error('Deals API error', {
-      error: error instanceof Error ? error.message : 'Unknown',
-    })
-
+    log.error('Deals API error', { error: error instanceof Error ? error.message : 'Unknown' })
     return NextResponse.json(
-      {
-        success: false,
-        error: 'API_ERROR',
-        message: 'An error occurred while fetching deals.',
-        retry_after: 30,
-      },
+      { success: false, error: 'API_ERROR', message: 'An error occurred while fetching deals.' },
       { status: 500 }
     )
   }

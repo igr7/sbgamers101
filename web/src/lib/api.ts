@@ -5,6 +5,7 @@ export interface Category {
   slug: string;
   name_en: string;
   name_ar: string;
+  amazon_category_id?: string;
 }
 
 export interface Product {
@@ -19,14 +20,27 @@ export interface Product {
   category_slug: string;
   category_name: string;
   amazon_url: string;
-  last_updated: string;
+  is_prime: boolean;
+  is_best_seller: boolean;
+  is_amazon_choice: boolean;
 }
 
-export interface ProductFull extends Product {
+export interface ProductFull {
+  asin: string;
+  title: string;
   brand: string;
   description: string;
   key_features: string[];
+  image_url: string;
   images: string[];
+  current_price: number;
+  original_price: number;
+  discount_pct: number;
+  rating: number;
+  ratings_total: number;
+  category_slug: string;
+  category_name: string;
+  amazon_url: string;
   availability: string;
   is_prime: boolean;
   is_best_seller: boolean;
@@ -39,12 +53,19 @@ export interface ProductFull extends Product {
     review_text: string;
     review_date: string;
     is_verified_purchase: boolean;
+    helpful_votes: number;
   }>;
   frequently_bought_together: Array<{
     asin: string;
     title: string;
     price: number;
     image_url: string;
+  }>;
+  variants: Array<{
+    asin: string;
+    price?: number;
+    availability?: string;
+    attributes: Record<string, string>;
   }>;
 }
 
@@ -59,7 +80,7 @@ export interface PaginatedResponse<T> {
   totalPages: number;
 }
 
-async function fetchApi<T>(path: string, params: Record<string, string | number> = {}): Promise<T> {
+async function fetchApi<T>(path: string, params: Record<string, string | number | undefined> = {}): Promise<T> {
   const url = new URL(`/api/v1${path}`, API_BASE);
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
@@ -88,19 +109,25 @@ export const api = {
     return res.data || [];
   },
 
-  getDeals: async (page = 1, minDiscount = 10): Promise<PaginatedResponse<Product>> => {
+  getDeals: async (page = 1, minDiscount = 0): Promise<PaginatedResponse<Product>> => {
     const res = await fetchApi<{
       success: boolean;
       data: {
         deals: Array<{
           asin: string;
-          title: string | null;
-          main_image: string | null;
+          title: string;
+          main_image: string;
           price: number | null;
           original_price: number | null;
           discount_percentage: number | null;
           rating: number | null;
           ratings_count: number | null;
+          is_prime: boolean;
+          is_best_seller: boolean;
+          is_amazon_choice: boolean;
+          amazon_url: string;
+          category_slug: string;
+          category_name: string;
         }>;
         total_count: number;
         total_pages: number;
@@ -116,10 +143,12 @@ export const api = {
       discount_pct: d.discount_percentage || 0,
       rating: d.rating || 0,
       ratings_total: d.ratings_count || 0,
-      category_slug: '',
-      category_name: '',
-      amazon_url: `https://www.amazon.sa/dp/${d.asin}`,
-      last_updated: new Date().toISOString(),
+      is_prime: d.is_prime || false,
+      is_best_seller: d.is_best_seller || false,
+      is_amazon_choice: d.is_amazon_choice || false,
+      category_slug: d.category_slug || '',
+      category_name: d.category_name || '',
+      amazon_url: d.amazon_url || `https://www.amazon.sa/dp/${d.asin}`,
     }));
 
     return {
@@ -142,6 +171,10 @@ export const api = {
           rating: number | null;
           ratings_count: number | null;
           image_url: string;
+          is_prime: boolean;
+          is_best_seller: boolean;
+          is_amazon_choice: boolean;
+          amazon_url: string;
         }>;
         total_results: number;
       };
@@ -156,10 +189,12 @@ export const api = {
       discount_pct: p.discount_percentage || 0,
       rating: p.rating || 0,
       ratings_total: p.ratings_count || 0,
+      is_prime: p.is_prime || false,
+      is_best_seller: p.is_best_seller || false,
+      is_amazon_choice: p.is_amazon_choice || false,
       category_slug: '',
       category_name: '',
-      amazon_url: `https://www.amazon.sa/dp/${p.asin}`,
-      last_updated: new Date().toISOString(),
+      amazon_url: p.amazon_url || `https://www.amazon.sa/dp/${p.asin}`,
     }));
 
     return {
@@ -185,11 +220,13 @@ export const api = {
         discount_percentage: number | null;
         rating: number | null;
         ratings_count: number | null;
+        category: string | null;
         category_hierarchy: string | null;
         availability: string | null;
         is_prime: boolean;
         is_best_seller: boolean;
         is_amazon_choice: boolean;
+        amazon_url: string;
         top_reviews: Array<{
           review_id: string;
           reviewer_name: string;
@@ -198,6 +235,7 @@ export const api = {
           review_text: string;
           review_date: string;
           is_verified_purchase: boolean;
+          helpful_votes: number;
         }>;
         frequently_bought_together: Array<{
           asin: string;
@@ -205,7 +243,12 @@ export const api = {
           price: number;
           image_url: string;
         }>;
-        fetched_at: string;
+        variants: Array<{
+          asin: string;
+          price?: number;
+          availability?: string;
+          attributes: Record<string, string>;
+        }>;
       };
     }>(`/product/${asin}`);
 
@@ -225,40 +268,46 @@ export const api = {
       rating: res.data.rating || 0,
       ratings_total: res.data.ratings_count || 0,
       category_slug: '',
-      category_name: res.data.category_hierarchy || '',
-      amazon_url: `https://www.amazon.sa/dp/${res.data.asin}?tag=sbgamers-21`,
-      last_updated: res.data.fetched_at || new Date().toISOString(),
+      category_name: res.data.category_hierarchy || res.data.category || '',
+      amazon_url: res.data.amazon_url || `https://www.amazon.sa/dp/${res.data.asin}?tag=sbgamers-21`,
       availability: res.data.availability || '',
       is_prime: res.data.is_prime || false,
       is_best_seller: res.data.is_best_seller || false,
       is_amazon_choice: res.data.is_amazon_choice || false,
       top_reviews: res.data.top_reviews || [],
       frequently_bought_together: res.data.frequently_bought_together || [],
+      variants: res.data.variants || [],
     };
   },
 
   getCategoryProducts: async (
     slug: string,
     page = 1,
-    sort = 'discount_desc'
+    sort = 'popular'
   ): Promise<PaginatedResponse<Product>> => {
     const res = await fetchApi<{
       success: boolean;
       data: {
         products: Array<{
           asin: string;
-          title: string | null;
-          main_image: string | null;
+          title: string;
+          main_image: string;
           price: number | null;
           original_price: number | null;
           discount_percentage: number | null;
           rating: number | null;
           ratings_count: number | null;
+          is_prime: boolean;
+          is_best_seller: boolean;
+          is_amazon_choice: boolean;
+          amazon_url: string;
         }>;
         total_count: number;
         total_pages: number;
+        category_name_en: string;
+        category_name_ar: string;
       };
-    }>('/products', { page, sort, limit: 20 });
+    }>(`/category/${slug}`, { page, sort, limit: 50 });
 
     const products: Product[] = (res.data?.products || []).map((p) => ({
       asin: p.asin,
@@ -269,10 +318,12 @@ export const api = {
       discount_pct: p.discount_percentage || 0,
       rating: p.rating || 0,
       ratings_total: p.ratings_count || 0,
+      is_prime: p.is_prime || false,
+      is_best_seller: p.is_best_seller || false,
+      is_amazon_choice: p.is_amazon_choice || false,
       category_slug: slug,
-      category_name: slug,
-      amazon_url: `https://www.amazon.sa/dp/${p.asin}`,
-      last_updated: new Date().toISOString(),
+      category_name: res.data?.category_name_en || slug,
+      amazon_url: p.amazon_url || `https://www.amazon.sa/dp/${p.asin}`,
     }));
 
     return {
@@ -283,21 +334,24 @@ export const api = {
   },
 
   getPriceHistory: async (asin: string): Promise<PriceHistoryEntry[]> => {
-    const res = await fetchApi<{
-      success: boolean;
-      data: {
-        history: Array<{
-          timestamp: string;
-          price: number | null;
-        }>;
-      };
-    }>(`/price-history/${asin}`, { days: 30 });
+    try {
+      const res = await fetchApi<{
+        success: boolean;
+        data: {
+          asin: string;
+          history: Array<{
+            price: number;
+            timestamp: string;
+          }>;
+        };
+      }>(`/price-history/${asin}`, { days: 30 });
 
-    return (res.data?.history || [])
-      .filter((h) => h.price !== null)
-      .map((h) => ({
-        price: h.price || 0,
+      return (res.data?.history || []).map((h) => ({
+        price: h.price,
         recorded_at: new Date(h.timestamp).toLocaleDateString(),
       }));
+    } catch {
+      return [];
+    }
   },
 };

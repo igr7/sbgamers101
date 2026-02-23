@@ -1,12 +1,6 @@
-import processPriceSnapshot from './jobs/price-snapshot'
-import processPopularRefresh from './jobs/popular-refresh'
-import processCacheWarmer from './jobs/cache-warmer-job'
-import processUsageMonitor from './jobs/usage-monitor'
+import processPriceUpdate from './jobs/price-update'
 import {
-  priceSnapshotQueue,
-  popularRefreshQueue,
-  cacheWarmerQueue,
-  usageMonitorQueue,
+  getPriceUpdateQueue,
   scheduleRecurringJobs,
   closeQueues,
   getQueueStats,
@@ -19,10 +13,8 @@ export function initializeQueues(): void {
   if (queuesInitialized) return
   queuesInitialized = true
 
-  priceSnapshotQueue.process(processPriceSnapshot)
-  popularRefreshQueue.process(processPopularRefresh)
-  cacheWarmerQueue.process(processCacheWarmer)
-  usageMonitorQueue.process(processUsageMonitor)
+  const priceUpdateQueue = getPriceUpdateQueue()
+  priceUpdateQueue.process(processPriceUpdate)
 
   log.info('Queue processors initialized')
 
@@ -31,12 +23,12 @@ export function initializeQueues(): void {
   })
 }
 
+export const priceUpdateQueue = getPriceUpdateQueue()
+
 export {
-  priceSnapshotQueue,
-  popularRefreshQueue,
-  cacheWarmerQueue,
-  usageMonitorQueue,
   scheduleRecurringJobs,
   closeQueues,
   getQueueStats,
 }
+
+export { addTrackedProduct, removeTrackedProduct, getPriceHistory } from './jobs/price-update'

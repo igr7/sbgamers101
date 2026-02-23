@@ -1,22 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { safeRedisGet, safeRedisSetex } from '@/lib/cache/redis-client'
-import { decodoApi, mapDecodoSearchResult } from '@/lib/decodo/decodo-client'
+import { decodoApi, mapDecodoSearchResult, AMAZON_SA_CATEGORIES } from '@/lib/decodo/decodo-client'
 import { log } from '@/lib/utils/logger'
 
 const CACHE_TTL = 1800
 
-const productsQuerySchema = z.object({
-  sort: z.enum(['price_asc', 'price_desc', 'rating_desc', 'discount_desc', 'popular']).default('popular'),
-  min_price: z.coerce.number().min(0).optional(),
-  max_price: z.coerce.number().min(0).optional(),
-  min_rating: z.coerce.number().min(0).max(5).optional(),
-  min_discount: z.coerce.number().min(0).max(100).optional(),
+const categoryQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
+  sort: z.enum(['discount_desc', 'price_asc', 'price_desc', 'rating_desc', 'popular']).default('popular'),
   limit: z.coerce.number().int().min(1).max(100).default(50),
 })
 
-interface ProductItem {
+interface CategoryProduct {
   asin: string
   title: string
   main_image: string
@@ -32,14 +28,16 @@ interface ProductItem {
   amazon_url: string
 }
 
-interface ProductsResponse {
+interface CategoryResponse {
   success: boolean
   data?: {
+    category_slug: string
+    category_name_en: string
+    category_name_ar: string
     total_count: number
     page: number
     total_pages: number
-    filters_applied: Record<string, unknown>
-    products: ProductItem[]
+    products: CategoryProduct[]
   }
   cached?: boolean
   cache_age_seconds?: number
@@ -48,21 +46,29 @@ interface ProductsResponse {
   message?: string
 }
 
-export async function GET(request: NextRequest): Promise<NextResponse<ProductsResponse>> {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ slug: string }> }
+): Promise<NextResponse<CategoryResponse>> {
+  const { slug } = await params
+
   try {
     const { searchParams } = new URL(request.url)
-    const params = {
-      sort: searchParams.get('sort') || 'popular',
-      min_price: searchParams.get('min_price') || undefined,
-      max_price: searchParams.get('max_price') || undefined,
-      min_rating: searchParams.get('min_rating') || undefined,
-      min_discount: searchParams.get('min_discount') || undefined,
+    const validated = categoryQuerySchema.parse({
       page: searchParams.get('page') || '1',
+      sort: searchParams.get('sort') || 'popular',
       limit: searchParams.get('limit') || '50',
+    })
+
+    const category = AMAZON_SA_CATEGORIES[slug as keyof typeof AMAZON_SA_CATEGORIES]
+    if (!category) {
+      return NextResponse.json(
+        { success: false, error: 'CATEGORY_NOT_FOUND', message: `Category "${slug}" not found.` },
+        { status: 404 }
+      )
     }
 
-    const validated = productsQuerySchema.parse(params)
-    const cacheKey = `products:${validated.sort}:${validated.page}:${validated.limit}`
+    const cacheKey = `category:${slug}:${validated.page}:${validated.sort}:${validated.limit}`
 
     const cachedData = await safeRedisGet(cacheKey)
     if (cachedData) {
@@ -77,7 +83,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<ProductsRe
       })
     }
 
-    const searchResult = await decodoApi.search('gaming', validated.page)
+    const searchResult = await decodoApi.search(category.name_en, validated.page)
     const organicResults = searchResult.results?.results?.organic || []
 
     let products = organicResults.map((item) => {
@@ -99,20 +105,10 @@ export async function GET(request: NextRequest): Promise<NextResponse<ProductsRe
       }
     })
 
-    if (validated.min_price !== undefined) {
-      products = products.filter((p) => p.price !== null && p.price >= validated.min_price!)
-    }
-    if (validated.max_price !== undefined) {
-      products = products.filter((p) => p.price !== null && p.price <= validated.max_price!)
-    }
-    if (validated.min_rating !== undefined) {
-      products = products.filter((p) => p.rating !== null && p.rating >= validated.min_rating!)
-    }
-    if (validated.min_discount !== undefined) {
-      products = products.filter((p) => p.discount_percentage !== null && p.discount_percentage >= validated.min_discount!)
-    }
-
     switch (validated.sort) {
+      case 'discount_desc':
+        products = products.sort((a, b) => (b.discount_percentage || 0) - (a.discount_percentage || 0))
+        break
       case 'price_asc':
         products = products.sort((a, b) => (a.price || 0) - (b.price || 0))
         break
@@ -122,9 +118,6 @@ export async function GET(request: NextRequest): Promise<NextResponse<ProductsRe
       case 'rating_desc':
         products = products.sort((a, b) => (b.rating || 0) - (a.rating || 0))
         break
-      case 'discount_desc':
-        products = products.sort((a, b) => (b.discount_percentage || 0) - (a.discount_percentage || 0))
-        break
     }
 
     const paginatedProducts = products.slice(0, validated.limit)
@@ -132,16 +125,12 @@ export async function GET(request: NextRequest): Promise<NextResponse<ProductsRe
     const totalPages = Math.ceil(totalCount / validated.limit)
 
     const responseData = {
+      category_slug: slug,
+      category_name_en: category.name_en,
+      category_name_ar: category.name_ar,
       total_count: totalCount,
       page: validated.page,
       total_pages: totalPages,
-      filters_applied: {
-        min_price: validated.min_price,
-        max_price: validated.max_price,
-        min_rating: validated.min_rating,
-        min_discount: validated.min_discount,
-        sort: validated.sort,
-      },
       products: paginatedProducts,
     }
 
@@ -169,9 +158,9 @@ export async function GET(request: NextRequest): Promise<NextResponse<ProductsRe
       )
     }
 
-    log.error('Products API error', { error: error instanceof Error ? error.message : 'Unknown' })
+    log.error('Category API error', { slug, error: error instanceof Error ? error.message : 'Unknown' })
     return NextResponse.json(
-      { success: false, error: 'API_ERROR', message: 'An error occurred while fetching products.' },
+      { success: false, error: 'API_ERROR', message: 'An error occurred while fetching category products.' },
       { status: 500 }
     )
   }

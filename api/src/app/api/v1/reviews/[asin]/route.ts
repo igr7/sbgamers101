@@ -1,90 +1,94 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { RedisKeys, CacheTTL, safeRedisGet, safeRedisSetex } from '@/lib/cache/redis-client'
-import { omkarApi, mapOmkarReviewsResponse, ReviewsResponse } from '@/lib/omkar/omkar-client'
+import { safeRedisGet, safeRedisSetex } from '@/lib/cache/redis-client'
+import { decodoApi } from '@/lib/decodo/decodo-client'
 import { log } from '@/lib/utils/logger'
+
+const CACHE_TTL = 86400
 
 const asinSchema = z.string().regex(/^[A-Z0-9]{10}$/, 'Invalid ASIN format')
 
-interface ReviewsApiResponse {
+interface ReviewsResponse {
   success: boolean
-  data?: ReviewsResponse
+  data?: {
+    asin: string
+    overall_rating: number | null
+    total_reviews: number
+    reviews: Array<{
+      review_id: string
+      reviewer_name: string
+      rating: number
+      review_title: string
+      review_text: string
+      review_date: string
+      is_verified_purchase: boolean
+      helpful_votes: number
+    }>
+  }
   cached?: boolean
-  stale?: boolean
   cache_age_seconds?: number
   source?: string
   error?: string
   message?: string
-  stale_data?: ReviewsResponse
-}
-
-function addCacheHeaders(
-  response: NextResponse,
-  cached: boolean,
-  cacheAge: number,
-  ttl: number,
-  stale: boolean
-): void {
-  response.headers.set('X-Cache', cached ? 'HIT' : 'MISS')
-  response.headers.set('X-Cache-Age', String(cacheAge))
-  response.headers.set('X-Cache-TTL', String(ttl))
-  response.headers.set('X-Stale', stale ? 'true' : 'false')
-  response.headers.set('Cache-Control', 'public, max-age=300')
 }
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ asin: string }> }
-): Promise<NextResponse<ReviewsApiResponse>> {
+): Promise<NextResponse<ReviewsResponse>> {
   const { asin } = await params
 
   try {
     const validatedAsin = asinSchema.parse(asin.toUpperCase())
+    const cacheKey = `reviews:${validatedAsin}`
 
-    const cacheKey = RedisKeys.reviews(validatedAsin)
     const cachedData = await safeRedisGet(cacheKey)
-
     if (cachedData) {
-      const parsed = JSON.parse(cachedData) as {
-        data: ReviewsResponse
-        metadata: { cachedAt: number }
-      }
+      const parsed = JSON.parse(cachedData)
       const cacheAge = Math.floor((Date.now() - parsed.metadata.cachedAt) / 1000)
-
-      const response = NextResponse.json({
+      return NextResponse.json({
         success: true,
         data: parsed.data,
         cached: true,
-        stale: false,
         cache_age_seconds: cacheAge,
         source: 'cache',
       })
-      addCacheHeaders(response, true, cacheAge, CacheTTL.reviews, false)
-      return response
     }
 
-    const rawReviews = await omkarApi.getReviews(validatedAsin)
-    const reviewsData = mapOmkarReviewsResponse(rawReviews, validatedAsin)
+    const product = await decodoApi.getProduct(validatedAsin)
+
+    const reviewsData = {
+      asin: validatedAsin,
+      overall_rating: product?.rating || null,
+      total_reviews: product?.ratings_total || 0,
+      reviews: (product?.top_reviews || []).map((review) => ({
+        review_id: review.id,
+        reviewer_name: review.author,
+        rating: review.rating,
+        review_title: review.title,
+        review_text: review.body,
+        review_date: review.date,
+        is_verified_purchase: review.verified,
+        helpful_votes: review.helpful_votes || 0,
+      })),
+    }
 
     safeRedisSetex(
       cacheKey,
-      CacheTTL.reviews,
+      CACHE_TTL,
       JSON.stringify({
         data: reviewsData,
-        metadata: { cachedAt: Date.now(), ttl: CacheTTL.reviews, compressed: false },
+        metadata: { cachedAt: Date.now(), ttl: CACHE_TTL },
       })
     )
 
-    const response = NextResponse.json({
+    return NextResponse.json({
       success: true,
       data: reviewsData,
       cached: false,
-      stale: false,
       cache_age_seconds: 0,
-      source: 'api',
+      source: 'decodo_api',
     })
-    addCacheHeaders(response, false, 0, CacheTTL.reviews, false)
-    return response
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -103,12 +107,7 @@ export async function GET(
     })
 
     return NextResponse.json(
-      {
-        success: false,
-        error: 'API_ERROR',
-        message: 'An error occurred while fetching reviews.',
-        retry_after: 30,
-      },
+      { success: false, error: 'API_ERROR', message: 'An error occurred while fetching reviews.' },
       { status: 500 }
     )
   }

@@ -1,20 +1,41 @@
 import { NextResponse } from 'next/server'
+import { checkRedisConnection } from '@/lib/cache/redis-client'
+import { log } from '@/lib/utils/logger'
 
 export async function GET() {
-  // Dump all env var KEYS (not values for security) to see what's available
-  const allEnvKeys = Object.keys(process.env).sort()
+  const startTime = Date.now()
 
-  const checks: Record<string, unknown> = {
-    node_env: process.env.NODE_ENV || 'NOT SET',
-    port: process.env.PORT || 'NOT SET',
-    database_url: process.env.DATABASE_URL ? 'SET' : 'NOT SET',
-    redis_url: process.env.REDIS_URL ? 'SET' : 'NOT SET',
-    omkar_api_key: process.env.OMKAR_API_KEY ? 'SET' : 'NOT SET',
-    omkar_api_base: process.env.OMKAR_API_BASE || 'NOT SET',
-    hostname: process.env.HOSTNAME || 'NOT SET',
-    all_env_keys: allEnvKeys,
-    cwd: process.cwd(),
+  const health = {
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    version: process.env.npm_package_version || '1.0.0',
+    checks: {
+      redis: 'unknown',
+      decodo_api_key: process.env.DECODO_API_KEY ? 'SET' : 'NOT SET',
+    },
+    responseTime: 0,
   }
 
-  return NextResponse.json({ checks })
+  try {
+    const redisHealthy = await checkRedisConnection()
+    health.checks.redis = redisHealthy ? 'healthy' : 'unhealthy'
+  } catch (error) {
+    health.checks.redis = 'error'
+    log.warn('Health check: Redis check failed', {
+      error: error instanceof Error ? error.message : 'Unknown',
+    })
+  }
+
+  health.responseTime = Date.now() - startTime
+
+  const isHealthy = health.checks.redis !== 'error'
+
+  return NextResponse.json(
+    {
+      success: isHealthy,
+      ...health,
+    },
+    { status: isHealthy ? 200 : 503 }
+  )
 }
