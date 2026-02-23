@@ -7,7 +7,8 @@ export async function fetchAndSaveProduct(asin: string): Promise<ProductData | n
     const raw = await omkarApi.getProduct(asin)
     const productData = mapOmkarToProductData(raw, asin)
 
-    await prisma.product.upsert({
+    // Fire-and-forget DB save - don't block response on DB availability
+    prisma.product.upsert({
       where: { asin },
       create: {
         asin,
@@ -54,11 +55,11 @@ export async function fetchAndSaveProduct(asin: string): Promise<ProductData | n
         request_count: { increment: 1 },
         last_fetched_at: new Date(),
       },
+    }).then(() => savePriceSnapshot(asin, productData)).catch((err) => {
+      log.error('DB save failed (non-blocking)', { asin, error: err.message })
     })
 
-    await savePriceSnapshot(asin, productData)
-
-    log.info('Product fetched and saved', { asin, title: productData.title?.slice(0, 50) })
+    log.info('Product fetched', { asin, title: productData.title?.slice(0, 50) })
     return productData
   } catch (error) {
     log.error('Failed to fetch product', {

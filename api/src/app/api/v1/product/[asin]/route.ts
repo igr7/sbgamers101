@@ -5,7 +5,14 @@ import { RedisKeys, CacheTTL, safeRedisGet, safeRedisSetex } from '@/lib/cache/r
 import { fetchAndSaveProduct, getStoredProduct } from '@/lib/omkar/product-fetcher'
 import { getMonthlyUsageStats } from '@/lib/omkar/usage-tracker'
 import { log } from '@/lib/utils/logger'
-import { ProductData } from '@/lib/omkar/omkar-client'
+import { omkarApi, mapOmkarToProductData, ProductData } from '@/lib/omkar/omkar-client'
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
+  return Promise.race([
+    promise,
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
+  ])
+}
 
 const asinSchema = z.string().regex(/^[A-Z0-9]{10}$/, 'Invalid ASIN format')
 
@@ -80,7 +87,8 @@ export async function GET(
       return response
     }
 
-    const storedProduct = await getStoredProduct(validatedAsin)
+    // Try DB with 3s timeout - skip if unavailable
+    const storedProduct = await withTimeout(getStoredProduct(validatedAsin), 3000)
     if (storedProduct) {
       const cacheAge = storedProduct.fetched_at
         ? Math.floor((Date.now() - new Date(storedProduct.fetched_at).getTime()) / 1000)
@@ -103,8 +111,9 @@ export async function GET(
       }
     }
 
-    const usageStats = await getMonthlyUsageStats()
-    if (usageStats.is_near_limit) {
+    // Check usage quota with 3s timeout - skip check if DB unavailable
+    const usageStats = await withTimeout(getMonthlyUsageStats(), 3000)
+    if (usageStats?.is_near_limit) {
       if (storedProduct) {
         const response = createResponse(storedProduct, true, true, 0, 'database')
         response.headers.set('X-Quota-Warning', 'true')
@@ -124,7 +133,18 @@ export async function GET(
       )
     }
 
-    const productData = await fetchAndSaveProduct(validatedAsin)
+    // Try fetchAndSaveProduct first (includes DB write), fall back to direct omkar API
+    let productData = await withTimeout(fetchAndSaveProduct(validatedAsin), 18000)
+
+    if (!productData) {
+      // Direct omkar API fallback (skip DB entirely)
+      try {
+        const raw = await omkarApi.getProduct(validatedAsin)
+        productData = mapOmkarToProductData(raw, validatedAsin)
+      } catch {
+        // omkar API also failed
+      }
+    }
 
     if (!productData) {
       if (storedProduct) {
@@ -180,7 +200,7 @@ export async function GET(
       error: error instanceof Error ? error.message : 'Unknown',
     })
 
-    const storedProduct = await getStoredProduct(asin).catch(() => null)
+    const storedProduct = await withTimeout(getStoredProduct(asin).catch(() => null), 3000)
     if (storedProduct) {
       const response = createResponse(storedProduct, true, true, 0, 'database')
       addCacheHeaders(response, true, 0, CacheTTL.product, true)
