@@ -98,15 +98,19 @@ export interface DecodoSearchResult {
 }
 
 export interface DecodoSearchResponse {
-  results: {
-    url: string
-    page: number
-    query: string
-    results: {
-      organic: DecodoSearchResult[]
-      paid?: DecodoSearchResult[]
+  results: Array<{
+    content: {
+      results: {
+        url: string
+        page: number
+        query: string
+        results: {
+          organic: DecodoSearchResult[]
+          paid?: DecodoSearchResult[]
+        }
+      }
     }
-  }
+  }>
 }
 
 export interface DecodoProductResponse {

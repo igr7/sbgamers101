@@ -84,7 +84,7 @@ export async function GET(
     }
 
     const searchResult = await decodoApi.search(category.name_en, validated.page)
-    const organicResults = searchResult.results?.results?.organic || []
+    const organicResults = searchResult.results?.[0]?.content?.results?.results?.organic || []
 
     let products = organicResults.map((item) => {
       const mapped = mapDecodoSearchResult(item)
