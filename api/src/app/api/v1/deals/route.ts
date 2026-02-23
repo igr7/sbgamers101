@@ -108,7 +108,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<DealsRespo
     // Use Omkar API directly (fastest, most reliable)
     const queryIndex = ((validated.page - 1) % GAMING_SEARCH_QUERIES.length)
     const searchQuery = GAMING_SEARCH_QUERIES[queryIndex]
-    const searchResult = await omkarApi.search(searchQuery, validated.page, 'best-sellers')
+    const searchResult = await omkarApi.search(searchQuery, validated.page, 'best_sellers')
     const mapped = mapOmkarSearchResult(searchResult.results || [])
 
     const deals: DealProduct[] = mapped
