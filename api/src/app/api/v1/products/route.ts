@@ -78,7 +78,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<ProductsRe
     }
 
     const searchResult = await decodoApi.search('gaming', validated.page)
-    const organicResults = searchResult.results?.results?.organic || []
+    const organicResults = searchResult.results?.[0]?.content?.results?.results?.organic || []
 
     let products = organicResults.map((item) => {
       const mapped = mapDecodoSearchResult(item)
