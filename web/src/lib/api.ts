@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://sbgamers101-5amqpe.cranl.net';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://sbgamers-api.ghmeshal7.workers.dev';
 
 export interface Category {
   id: string;

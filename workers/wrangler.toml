@@ -1,0 +1,10 @@
+name = "sbgamers-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "CACHE"
+id = "c6a237d1753346a38c6400fb6e8b7dc9"
+
+[vars]
+ENVIRONMENT = "production"
