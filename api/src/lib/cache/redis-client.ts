@@ -2,69 +2,54 @@ import Redis, { RedisOptions } from 'ioredis'
 import { log } from '../utils/logger'
 
 const globalForRedis = globalThis as unknown as {
-  redis: Redis | undefined
+  redis: Redis | null
 }
 
 const redisOptions: RedisOptions = {
   maxRetriesPerRequest: 1,
   enableReadyCheck: false,
   lazyConnect: true,
-  connectTimeout: 5000,
-  commandTimeout: 3000,
-  retryStrategy: (times: number): number | null => {
-    if (times > 3) {
-      log.error('Redis connection failed after 3 retries')
-      return null
-    }
-    return Math.min(times * 200, 2000)
-  },
+  connectTimeout: 3000,
+  commandTimeout: 2000,
+  retryStrategy: (): null => null,
 }
 
-let _redis: Redis | undefined = undefined
+let _redis: Redis | null = null
+let _redisError: Error | null = null
 
-function getRedis(): Redis {
-  if (!_redis) {
-    _redis = globalForRedis.redis || new Redis(process.env.REDIS_URL || 'redis://localhost:6379', redisOptions)
+async function getRedis(): Promise<Redis | null> {
+  if (_redis) return _redis
+  if (_redisError) return null
+  
+  try {
+    const client = globalForRedis.redis || new Redis(process.env.REDIS_URL || 'redis://localhost:6379', redisOptions)
+    
+    await client.ping()
+    
+    _redis = client
     if (process.env.NODE_ENV !== 'production') {
       globalForRedis.redis = _redis
     }
-    _redis.on('connect', () => log.info('Redis connected'))
     _redis.on('error', (err: Error) => log.error('Redis error', { error: err.message }))
     _redis.on('close', () => log.warn('Redis connection closed'))
+    log.info('Redis connected')
+    return _redis
+  } catch (err) {
+    log.warn('Redis unavailable, caching disabled', { error: err instanceof Error ? err.message : 'Unknown' })
+    _redisError = err as Error
+    return null
   }
-  return _redis
-}
-
-export const redis = new Proxy({} as Redis, {
-  get(target, prop) {
-    return Reflect.get(getRedis() as unknown as Record<string, unknown>, prop)
-  },
-}) as Redis
-
-export async function disconnectRedis(): Promise<void> {
-  await redis.quit()
-}
-
-export async function checkRedisConnection(): Promise<boolean> {
-  try {
-    const result = await redis.ping()
-    return result === 'PONG'
-  } catch {
-    return false
-  }
-}
-
-// Safe Redis operations that fail fast (2s timeout) and return null instead of hanging
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
-  return Promise.race([
-    promise,
-    new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
-  ])
 }
 
 export async function safeRedisGet(key: string): Promise<string | null> {
   try {
-    return await withTimeout(redis.get(key), 2000)
+    const client = await getRedis()
+    if (!client) return null
+    
+    return await Promise.race([
+      client.get(key),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000)),
+    ])
   } catch {
     return null
   }
@@ -72,9 +57,32 @@ export async function safeRedisGet(key: string): Promise<string | null> {
 
 export async function safeRedisSetex(key: string, ttl: number, value: string): Promise<void> {
   try {
-    await withTimeout(redis.setex(key, ttl, value), 2000)
+    const client = await getRedis()
+    if (!client) return
+    
+    await Promise.race([
+      client.setex(key, ttl, value),
+      new Promise<void>((resolve) => setTimeout(() => resolve(), 2000)),
+    ])
   } catch {
     // silently fail - caching is optional
+  }
+}
+
+export async function disconnectRedis(): Promise<void> {
+  if (_redis) {
+    await _redis.quit()
+  }
+}
+
+export async function checkRedisConnection(): Promise<boolean> {
+  const client = await getRedis()
+  if (!client) return false
+  try {
+    const result = await client.ping()
+    return result === 'PONG'
+  } catch {
+    return false
   }
 }
 
