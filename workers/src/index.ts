@@ -31,25 +31,6 @@ async function searchAmazonSA(query: string, apiKey: string): Promise<any> {
   return response.json();
 }
 
-async function searchNeweggSA(query: string, apiKey: string): Promise<any> {
-  const response = await fetch(
-    `https://newegg-api.p.rapidapi.com/products/search?keyword=${encodeURIComponent(query)}&country=SA&language=en`,
-    {
-      method: 'GET',
-      headers: {
-        'x-rapidapi-key': apiKey,
-        'x-rapidapi-host': 'newegg-api.p.rapidapi.com',
-      },
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error(`Newegg API error: ${response.status}`);
-  }
-
-  return response.json();
-}
-
 function mapAmazonProduct(item: any) {
   const price = item.product_price ? parseFloat(item.product_price.replace(/[^0-9.]/g, '')) : null;
   const originalPrice = item.product_original_price ? parseFloat(item.product_original_price.replace(/[^0-9.]/g, '')) : null;
@@ -72,28 +53,6 @@ function mapAmazonProduct(item: any) {
   };
 }
 
-function mapNeweggProduct(item: any) {
-  const price = item.FinalPrice ? parseFloat(item.FinalPrice) : null;
-  const originalPrice = item.OriginalPrice ? parseFloat(item.OriginalPrice) : price;
-
-  return {
-    asin: item.ItemNumber || '',
-    title: item.Title || '',
-    main_image: item.ImageUrl || '',
-    price: price,
-    original_price: originalPrice,
-    discount_percentage: originalPrice && price ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0,
-    rating: item.ReviewSummary?.Rating || null,
-    ratings_count: item.ReviewSummary?.TotalReviews || 0,
-    is_prime: false,
-    is_best_seller: false,
-    is_amazon_choice: false,
-    currency: 'SAR',
-    amazon_url: item.ProductUrl || '',
-    source: 'newegg_sa',
-  };
-}
-
 async function handleRequest(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   const path = url.pathname;
@@ -113,7 +72,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       return new Response(JSON.stringify({
         success: true,
         status: 'healthy',
-        apis: ['amazon_sa', 'newegg_sa'],
+        apis: ['amazon_sa'],
         timestamp: new Date().toISOString(),
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -147,15 +106,9 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         });
       }
 
-      const [amazonResult, neweggResult] = await Promise.all([
-        searchAmazonSA('Graphics Cards', env.RAPIDAPI_KEY).catch(() => ({ products: [] })),
-        searchNeweggSA('Graphics Cards', env.RAPIDAPI_KEY).catch(() => ({ ProductListItems: [] })),
-      ]);
-
-      const amazonProducts = (amazonResult.products || []).map(mapAmazonProduct);
-      const neweggProducts = (neweggResult.ProductListItems || []).map(mapNeweggProduct);
-
-      const allProducts = [...amazonProducts, ...neweggProducts]
+      const result = await searchAmazonSA('Graphics Cards', env.RAPIDAPI_KEY);
+      const products = (result.products || [])
+        .map(mapAmazonProduct)
         .filter((p: any) => p.price && p.price > 0)
         .sort((a: any, b: any) => b.discount_percentage - a.discount_percentage)
         .slice(0, limit);
@@ -163,14 +116,14 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       const response = {
         success: true,
         data: {
-          total_count: allProducts.length,
+          total_count: products.length,
           page: 1,
           total_pages: 1,
           filters_applied: {},
-          deals: allProducts.map(p => ({ ...p, category_slug: 'gpu', category_name: 'Graphics Cards' })),
+          deals: products.map(p => ({ ...p, category_slug: 'gpu', category_name: 'Graphics Cards' })),
         },
         cached: false,
-        sources: ['amazon_sa', 'newegg_sa'],
+        source: 'amazon_sa',
       };
 
       const responseStr = JSON.stringify(response);
@@ -206,15 +159,9 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         });
       }
 
-      const [amazonResult, neweggResult] = await Promise.all([
-        searchAmazonSA(category.name_en, env.RAPIDAPI_KEY).catch(() => ({ products: [] })),
-        searchNeweggSA(category.name_en, env.RAPIDAPI_KEY).catch(() => ({ ProductListItems: [] })),
-      ]);
-
-      const amazonProducts = (amazonResult.products || []).map(mapAmazonProduct);
-      const neweggProducts = (neweggResult.ProductListItems || []).map(mapNeweggProduct);
-
-      const allProducts = [...amazonProducts, ...neweggProducts]
+      const result = await searchAmazonSA(category.name_en, env.RAPIDAPI_KEY);
+      const products = (result.products || [])
+        .map(mapAmazonProduct)
         .filter((p: any) => p.price && p.price > 0)
         .slice(0, limit);
 
@@ -224,13 +171,13 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
           category_slug: slug,
           category_name_en: category.name_en,
           category_name_ar: category.name_ar,
-          total_count: allProducts.length,
+          total_count: products.length,
           page: 1,
           total_pages: 1,
-          products: allProducts,
+          products,
         },
         cached: false,
-        sources: ['amazon_sa', 'newegg_sa'],
+        source: 'amazon_sa',
       };
 
       const responseStr = JSON.stringify(response);
