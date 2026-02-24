@@ -19,12 +19,12 @@ export default function Pagination({ page, totalPages, onPageChange }: Props) {
         disabled={page === 1}
         className="btn-secondary disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1.5 text-sm"
       >
-        <svg className="w-4 h-4 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        <svg className="w-4 h-4 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+          <path strokeLinecap="square" strokeLinejoin="miter" d="M15 19l-7-7 7-7" />
         </svg>
         {t('common.prev')}
       </button>
-      <span className="text-sm text-gray-500 px-3 tabular-nums">
+      <span className="text-sm text-muted-foreground px-3 tabular-nums font-bold uppercase tracking-wider">
         {t('common.page')} {page} {t('common.of')} {totalPages}
       </span>
       <button
@@ -33,8 +33,8 @@ export default function Pagination({ page, totalPages, onPageChange }: Props) {
         className="btn-secondary disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1.5 text-sm"
       >
         {t('common.next')}
-        <svg className="w-4 h-4 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        <svg className="w-4 h-4 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+          <path strokeLinecap="square" strokeLinejoin="miter" d="M9 5l7 7-7 7" />
         </svg>
       </button>
     </div>

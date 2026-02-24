@@ -11,20 +11,12 @@ interface Props {
 
 function Skeleton() {
   return (
-    <div className="card animate-pulse">
-      <div className="aspect-[4/3] bg-gradient-to-b from-white/[0.02] to-transparent rounded-t-2xl relative overflow-hidden">
-        <div className="skeleton-shimmer absolute inset-0" />
-      </div>
+    <div className="card-brutal overflow-hidden animate-pulse">
+      <div className="aspect-square bg-secondary border-b-2 border-border" />
       <div className="p-4 space-y-3">
-        <div className="h-2 bg-white/[0.04] rounded-full w-16" />
-        <div className="h-3.5 bg-white/[0.04] rounded-full w-full" />
-        <div className="h-3.5 bg-white/[0.04] rounded-full w-3/4" />
-        <div className="flex gap-0.5 mt-3">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="w-3 h-3 rounded-full bg-white/[0.03]" />
-          ))}
-        </div>
-        <div className="h-5 bg-white/[0.06] rounded-full w-24 mt-3" />
+        <div className="h-3 bg-secondary w-3/4" />
+        <div className="h-3 bg-secondary w-1/2" />
+        <div className="h-6 bg-secondary w-1/3 mt-4" />
       </div>
     </div>
   );
@@ -45,14 +37,14 @@ export default function ProductGrid({ products, loading }: Props) {
 
   if (products.length === 0) {
     return (
-      <div className="text-center py-20">
-        <div className="w-20 h-20 mx-auto mb-5 rounded-2xl bg-gradient-to-b from-white/[0.04] to-transparent border border-white/[0.06] flex items-center justify-center">
-          <svg className="w-8 h-8 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      <div className="text-center py-20 card-brutal">
+        <div className="w-20 h-20 mx-auto mb-5 border-2 border-border bg-secondary flex items-center justify-center">
+          <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+            <path strokeLinecap="square" strokeLinejoin="miter" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
-        <p className="text-gray-600 font-medium text-lg">{t('common.noResults')}</p>
-        <p className="text-gray-700 text-sm mt-1">Try adjusting your filters</p>
+        <p className="text-foreground font-black text-lg uppercase tracking-wide mb-2">{t('common.noResults')}</p>
+        <p className="text-muted-foreground text-sm font-semibold">Try adjusting your filters</p>
       </div>
     );
   }
