@@ -95,9 +95,16 @@ export default function CategoryPageClient() {
           </p>
         </div>
 
-        <div className="flex gap-8">
-          {/* Filters */}
+        {/* Filters - Mobile Button */}
+        <div className="lg:hidden mb-6">
           <FilterSidebar filters={filters} onChange={setFilters} />
+        </div>
+
+        <div className="flex gap-8">
+          {/* Filters - Desktop Sidebar */}
+          <div className="hidden lg:block">
+            <FilterSidebar filters={filters} onChange={setFilters} />
+          </div>
 
           {/* Products Grid */}
           <div className="flex-1 min-w-0">
