@@ -67,30 +67,99 @@ async function getProductDetails(asin: string, apiKey: string): Promise<any> {
   return null;
 }
 
-function isGamingProduct(title: string): boolean {
+// Strict category validation to prevent cross-contamination
+const CATEGORY_VALIDATORS = {
+  gpu: {
+    required: ['rtx', 'gtx', 'radeon', 'geforce', 'graphics card', 'gpu', 'rx 6', 'rx 7', 'arc', 'video card'],
+    excluded: ['laptop', 'notebook', 'pc', 'desktop', 'computer', 'bundle', 'system', 'prebuilt', 'cpu', 'processor', 'motherboard', 'case', 'psu', 'power supply'],
+    mustNotContain: ['intel core', 'ryzen', 'i5', 'i7', 'i9', 'threadripper']
+  },
+  cpu: {
+    required: ['processor', 'cpu', 'intel core', 'ryzen', 'threadripper', 'i3', 'i5', 'i7', 'i9'],
+    excluded: ['laptop', 'notebook', 'pc', 'desktop', 'computer', 'bundle', 'system', 'prebuilt', 'graphics', 'gpu', 'rtx', 'gtx', 'motherboard'],
+    mustNotContain: ['geforce', 'radeon', 'graphics card']
+  },
+  monitor: {
+    required: ['monitor', 'display', 'screen', 'hz', 'ips', 'va panel', 'oled'],
+    excluded: ['laptop', 'tablet', 'phone', 'tv', 'television', 'projector', 'mount', 'arm', 'stand only'],
+    mustNotContain: []
+  },
+  keyboard: {
+    required: ['keyboard', 'mechanical', 'switches', 'keycaps'],
+    excluded: ['mouse', 'headset', 'controller', 'case', 'cover', 'skin', 'sticker'],
+    mustNotContain: []
+  },
+  mouse: {
+    required: ['mouse', 'mice', 'dpi', 'sensor'],
+    excluded: ['keyboard', 'headset', 'controller', 'pad only', 'mat only', 'mousepad'],
+    mustNotContain: []
+  },
+  headset: {
+    required: ['headset', 'headphone', 'earphone', 'audio'],
+    excluded: ['mouse', 'keyboard', 'controller', 'stand', 'hanger', 'case only'],
+    mustNotContain: []
+  },
+  ram: {
+    required: ['ram', 'memory', 'ddr4', 'ddr5', 'dimm', 'sodimm'],
+    excluded: ['laptop', 'ssd', 'hdd', 'storage', 'motherboard', 'cpu', 'gpu'],
+    mustNotContain: []
+  },
+  ssd: {
+    required: ['ssd', 'nvme', 'm.2', 'solid state', 'storage'],
+    excluded: ['hdd', 'hard drive', 'external', 'enclosure', 'adapter', 'ram', 'memory'],
+    mustNotContain: []
+  },
+  motherboard: {
+    required: ['motherboard', 'mobo', 'socket', 'chipset', 'atx', 'itx'],
+    excluded: ['cpu', 'processor', 'gpu', 'case', 'bundle', 'pc', 'system'],
+    mustNotContain: []
+  },
+  psu: {
+    required: ['power supply', 'psu', 'watt', 'modular', '80 plus'],
+    excluded: ['cable only', 'adapter', 'ups', 'battery', 'case'],
+    mustNotContain: []
+  },
+  case: {
+    required: ['case', 'chassis', 'tower', 'enclosure'],
+    excluded: ['psu', 'fan only', 'motherboard', 'bundle', 'pc', 'system', 'prebuilt'],
+    mustNotContain: []
+  },
+  cooling: {
+    required: ['cooler', 'cooling', 'fan', 'aio', 'liquid', 'radiator', 'heatsink'],
+    excluded: ['case only', 'thermal paste only', 'pad only'],
+    mustNotContain: []
+  }
+};
+
+function validateProductForCategory(title: string, category: string): boolean {
   const titleLower = title.toLowerCase();
+  const validator = CATEGORY_VALIDATORS[category as keyof typeof CATEGORY_VALIDATORS];
 
-  // Gaming keywords that should be present
-  const gamingKeywords = ['gaming', 'rtx', 'gtx', 'radeon', 'geforce', 'rx ', 'nvidia', 'amd', 'intel', 'mechanical', 'rgb', 'dpi', 'hz', 'fps', 'pc', 'computer', 'esports'];
+  if (!validator) return false;
 
-  // Non-gaming keywords that should exclude the product
-  const excludeKeywords = ['food', 'kitchen', 'cooking', 'coffee', 'tea', 'blender', 'mixer', 'oven', 'refrigerator', 'dishwasher', 'washing', 'vacuum', 'iron', 'fan', 'heater', 'air conditioner', 'furniture', 'bed', 'mattress', 'pillow', 'blanket', 'towel', 'soap', 'shampoo', 'perfume', 'makeup', 'clothing', 'shoes', 'watch', 'jewelry', 'toy', 'baby', 'pet', 'garden', 'tool', 'drill', 'hammer'];
+  // Global exclusions (applies to all categories)
+  const globalExclusions = ['food', 'kitchen', 'cooking', 'coffee', 'blender', 'oven', 'refrigerator',
+    'dishwasher', 'washing', 'vacuum', 'furniture', 'bed', 'mattress', 'clothing', 'shoes',
+    'watch', 'jewelry', 'toy', 'baby', 'pet', 'garden'];
 
-  // Check if product contains any excluded keywords
-  for (const keyword of excludeKeywords) {
-    if (titleLower.includes(keyword)) {
-      return false;
-    }
+  for (const keyword of globalExclusions) {
+    if (titleLower.includes(keyword)) return false;
   }
 
-  // Check if product contains at least one gaming keyword
-  for (const keyword of gamingKeywords) {
-    if (titleLower.includes(keyword)) {
-      return true;
-    }
+  // Check category-specific exclusions
+  for (const keyword of validator.excluded) {
+    if (titleLower.includes(keyword)) return false;
   }
 
-  return false;
+  // Check must-not-contain (stricter than excluded)
+  for (const keyword of validator.mustNotContain) {
+    if (titleLower.includes(keyword)) return false;
+  }
+
+  // Must have at least one required keyword
+  const hasRequired = validator.required.some(keyword => titleLower.includes(keyword));
+
+  return hasRequired;
 }
 
 async function savePriceHistory(env: Env, asin: string, price: number, originalPrice: number, title: string) {
@@ -181,7 +250,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
 
     if (path === '/api/v1/deals') {
       const limit = parseInt(url.searchParams.get('limit') || '20');
-      const cacheKey = `deals:gpu:${limit}`;
+      const cacheKey = `deals:all:${limit}`;
 
       const cached = await env.CACHE.get(cacheKey);
       if (cached) {
@@ -190,21 +259,38 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         });
       }
 
-      const result = await searchAmazonSA('Gaming Graphics Cards RTX', env.RAPIDAPI_KEY);
-      const products = (result.products || [])
-        .map(mapAmazonProduct)
-        .filter((p: any) => p.price && p.price > 0 && isGamingProduct(p.title))
+      // Fetch deals from top 3 categories (GPU, CPU, Monitor)
+      const topCategories = ['gpu', 'cpu', 'monitor'];
+      const allProducts: any[] = [];
+
+      for (const slug of topCategories) {
+        const category = CATEGORIES[slug as keyof typeof CATEGORIES];
+        try {
+          const result = await searchAmazonSA(category.search_query, env.RAPIDAPI_KEY);
+          const products = (result.products || [])
+            .map(mapAmazonProduct)
+            .filter((p: any) => p.price && p.price > 0 && validateProductForCategory(p.title, slug))
+            .map((p: any) => ({ ...p, category_slug: slug, category_name: category.name }));
+
+          allProducts.push(...products);
+        } catch (error) {
+          console.error(`Error fetching ${slug}:`, error);
+        }
+      }
+
+      // Sort by discount and take top deals
+      const deals = allProducts
         .sort((a: any, b: any) => b.discount_percentage - a.discount_percentage)
         .slice(0, limit);
 
       const response = {
         success: true,
         data: {
-          total_count: products.length,
+          total_count: deals.length,
           page: 1,
           total_pages: 1,
           filters_applied: {},
-          deals: products.map(p => ({ ...p, category_slug: 'gpu', category_name: 'Graphics Cards' })),
+          deals,
         },
         cached: false,
         source: 'amazon_sa',
@@ -246,7 +332,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       const result = await searchAmazonSA(category.search_query, env.RAPIDAPI_KEY);
       const products = (result.products || [])
         .map(mapAmazonProduct)
-        .filter((p: any) => p.price && p.price > 0 && isGamingProduct(p.title))
+        .filter((p: any) => p.price && p.price > 0 && validateProductForCategory(p.title, slug))
         .slice(0, limit);
 
       const response = {
@@ -308,17 +394,12 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         title: productData.product_title || '',
         description: productData.product_description || '',
         main_image: productData.product_image || productData.product_photo || '',
-        image_url: productData.product_image || productData.product_photo || '',
         images: productData.product_photos || [productData.product_image],
-        current_price: price || 0,
         price: price,
         original_price: originalPrice || price,
-        discount_pct: originalPrice && price ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0,
         discount_percentage: originalPrice && price ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0,
         rating: productData.product_star_rating ? parseFloat(productData.product_star_rating) : 0,
-        ratings_total: productData.product_num_ratings || 0,
         ratings_count: productData.product_num_ratings || 0,
-        reviews_count: productData.product_num_reviews || 0,
         is_prime: productData.is_prime || false,
         is_best_seller: productData.is_best_seller || false,
         is_amazon_choice: productData.is_amazon_choice || false,
@@ -326,12 +407,12 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         amazon_url: `https://www.amazon.sa/dp/${asin}`,
         availability: productData.delivery_info || 'In Stock',
         brand: '',
-        category_name: '',
+        category: null,
+        category_hierarchy: null,
         key_features: [],
-        specifications: productData.product_details || {},
-        features: productData.product_features || [],
         top_reviews: [],
         frequently_bought_together: [],
+        variants: [],
         source: 'amazon_sa',
       };
 

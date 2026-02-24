@@ -9,11 +9,11 @@ export async function generateStaticParams() {
     { slug: 'mouse' },
     { slug: 'headset' },
     { slug: 'ram' },
+    { slug: 'ssd' },
     { slug: 'motherboard' },
-    { slug: 'chair' },
-    { slug: 'cooling' },
     { slug: 'psu' },
     { slug: 'case' },
+    { slug: 'cooling' },
   ];
 }
 

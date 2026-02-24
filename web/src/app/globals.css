@@ -104,6 +104,10 @@
     content: '';
     @apply absolute inset-0 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 rounded-2xl opacity-30 blur-lg;
   }
+
+  .stat-card {
+    @apply text-center;
+  }
 }
 
 /* Animations */

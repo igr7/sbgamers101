@@ -268,7 +268,7 @@ export const api = {
       ratings_total: res.data.ratings_count || 0,
       category_slug: '',
       category_name: res.data.category_hierarchy || res.data.category || '',
-      amazon_url: res.data.amazon_url || `https://www.amazon.sa/dp/${res.data.asin}?tag=sbgamers-21`,
+      amazon_url: res.data.amazon_url || `https://www.amazon.sa/dp/${res.data.asin}`,
       availability: res.data.availability || '',
       is_prime: res.data.is_prime || false,
       is_best_seller: res.data.is_best_seller || false,

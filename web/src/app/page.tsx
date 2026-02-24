@@ -4,26 +4,12 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { api, Category, Product } from '@/lib/api';
 import { wrapProducts, SanitizedProduct } from '@/lib/productWrapper';
+import { getCategoryEmoji } from '@/lib/utils';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import HeroSection from '@/components/HeroSection';
 import PremiumProductCard from '@/components/PremiumProductCard';
 import Link from 'next/link';
-
-const CATEGORY_ICONS: Record<string, string> = {
-  gpu: '🎮',
-  cpu: '⚡',
-  monitor: '🖥️',
-  keyboard: '⌨️',
-  mouse: '🖱️',
-  headset: '🎧',
-  ram: '💾',
-  ssd: '💿',
-  motherboard: '🔌',
-  psu: '🔋',
-  case: '📦',
-  cooling: '❄️',
-};
 
 export default function HomePage() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -93,7 +79,7 @@ export default function HomePage() {
                   <div className="relative">
                     <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 rounded-2xl opacity-0 group-hover:opacity-30 blur-lg transition-opacity duration-500" />
                     <div className="relative bg-gradient-to-br from-[#1a1a24] to-[#12121a] border border-white/10 group-hover:border-cyan-500/30 rounded-2xl p-6 transition-all duration-300 flex flex-col items-center gap-3">
-                      <div className="text-5xl">{CATEGORY_ICONS[cat.slug] || '🎯'}</div>
+                      <div className="text-5xl">{getCategoryEmoji(cat.slug)}</div>
                       <h3 className="text-sm font-bold text-gray-300 group-hover:text-white transition-colors text-center">
                         {cat.name}
                       </h3>
