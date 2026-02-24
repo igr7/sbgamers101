@@ -1,6 +1,7 @@
 node_modules/
 .next/
 .wrangler/
+.vercel/
 .dev.vars
 .env
 .env.local
