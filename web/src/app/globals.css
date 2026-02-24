@@ -1,34 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Work+Sans:wght@400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* Tech Noir Color System - Amber/Gold luxury accents */
-    --background: 0 0% 3%;
+    /* Precision Brutalism - Monochrome with Strategic Accents */
+    --background: 0 0% 8%;
     --foreground: 0 0% 98%;
-    --card: 0 0% 5%;
+    --card: 0 0% 12%;
     --card-foreground: 0 0% 98%;
-    --popover: 0 0% 5%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 38 92% 50%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 10%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 8%;
+    --secondary: 0 0% 16%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 10%;
+    --accent: 142 76% 36%;
+    --accent-foreground: 0 0% 98%;
+    --muted: 0 0% 20%;
     --muted-foreground: 0 0% 60%;
-    --accent: 38 92% 50%;
-    --accent-foreground: 0 0% 9%;
+    --border: 0 0% 24%;
+    --input: 0 0% 20%;
+    --ring: 0 0% 98%;
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 15%;
-    --input: 0 0% 15%;
-    --ring: 38 92% 50%;
-    --radius: 0.75rem;
+    --radius: 0;
   }
 
   * {
-    @apply border-border;
     box-sizing: border-box;
   }
 
@@ -39,163 +37,225 @@
   }
 
   body {
-    @apply bg-background text-foreground;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    font-feature-settings: 'cv11', 'ss01';
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 500;
+    letter-spacing: -0.01em;
   }
 
   ::selection {
-    @apply bg-primary/30 text-foreground;
+    background-color: hsl(var(--primary));
+    color: hsl(var(--background));
   }
 
   ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 12px;
+    height: 12px;
   }
   ::-webkit-scrollbar-track {
-    @apply bg-transparent;
+    background: hsl(var(--background));
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-primary/20 hover:bg-primary/30 rounded-full;
+    background-color: hsl(var(--border));
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted));
   }
 }
 
 @layer components {
   /* Container */
   .container-main {
-    @apply max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8;
+    max-width: 1400px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+  @media (min-width: 1024px) {
+    .container-main {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
   }
 
-  /* Premium Card with Ambient Glow */
-  .card-premium {
-    @apply relative bg-card border border-border rounded-xl overflow-hidden;
-    @apply transition-all duration-300;
+  /* Brutalist Card */
+  .card-brutal {
+    background-color: hsl(var(--card));
+    border: 2px solid hsl(var(--border));
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .card-premium::before {
-    content: '';
-    @apply absolute -inset-[1px] bg-gradient-to-br from-primary/0 via-primary/0 to-primary/0 rounded-xl opacity-0;
-    @apply transition-opacity duration-500;
-    z-index: -1;
-  }
-
-  .card-premium:hover::before {
-    @apply opacity-100;
-    background: linear-gradient(135deg,
-      hsl(var(--primary) / 0.15) 0%,
-      hsl(var(--primary) / 0.05) 50%,
-      hsl(var(--primary) / 0.15) 100%);
-  }
-
-  /* Value Badge System */
-  .badge-excellent {
-    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold;
-    @apply bg-gradient-to-r from-amber-500 to-yellow-500 text-black;
-    @apply shadow-lg shadow-amber-500/20;
-  }
-
-  .badge-good {
-    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold;
-    @apply bg-gradient-to-r from-emerald-500 to-teal-500 text-black;
-    @apply shadow-lg shadow-emerald-500/20;
-  }
-
-  .badge-fair {
-    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold;
-    @apply bg-gradient-to-r from-blue-500 to-cyan-500 text-black;
-    @apply shadow-lg shadow-blue-500/20;
-  }
-
-  /* Price Trend Indicators */
-  .price-down {
-    @apply inline-flex items-center gap-1 text-emerald-400 text-sm font-semibold;
-  }
-
-  .price-up {
-    @apply inline-flex items-center gap-1 text-red-400 text-sm font-semibold;
-  }
-
-  .price-stable {
-    @apply inline-flex items-center gap-1 text-gray-400 text-sm font-semibold;
+  .card-brutal:hover {
+    border-color: hsl(var(--primary));
+    transform: translateY(-2px);
   }
 
   /* Buttons */
   .btn-primary {
-    @apply relative inline-flex items-center justify-center gap-2;
-    @apply px-6 py-3 rounded-xl font-bold text-sm;
-    @apply bg-primary text-primary-foreground;
-    @apply hover:bg-primary/90 transition-all duration-200;
-    @apply shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.75rem;
+    font-weight: 700;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border: 2px solid hsl(var(--primary));
+    transition: all 0.15s;
+  }
+
+  .btn-primary:hover {
+    background-color: transparent;
+    color: hsl(var(--primary));
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2;
-    @apply px-6 py-3 rounded-xl font-bold text-sm;
-    @apply bg-secondary text-secondary-foreground border border-border;
-    @apply hover:bg-secondary/80 hover:border-primary/30 transition-all duration-200;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.75rem;
+    font-weight: 700;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background-color: transparent;
+    color: hsl(var(--foreground));
+    border: 2px solid hsl(var(--border));
+    transition: all 0.15s;
+  }
+
+  .btn-secondary:hover {
+    border-color: hsl(var(--primary));
+    color: hsl(var(--primary));
   }
 
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2;
-    @apply px-4 py-2 rounded-lg font-medium text-sm;
-    @apply text-muted-foreground hover:text-foreground hover:bg-secondary/50;
-    @apply transition-all duration-200;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+    transition: all 0.15s;
+  }
+
+  .btn-ghost:hover {
+    color: hsl(var(--foreground));
+    background-color: hsl(var(--secondary));
   }
 
   /* Input */
-  .input-modern {
-    @apply w-full bg-secondary border border-border rounded-xl px-4 py-3;
-    @apply text-foreground placeholder-muted-foreground;
-    @apply focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20;
-    @apply transition-all duration-200;
+  .input-brutal {
+    width: 100%;
+    background-color: hsl(var(--input));
+    border: 2px solid hsl(var(--border));
+    padding: 0.875rem 1rem;
+    color: hsl(var(--foreground));
+    font-weight: 600;
+    transition: all 0.15s;
   }
 
-  /* Gradient Text */
-  .gradient-text-gold {
-    @apply bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-400 bg-clip-text text-transparent;
-    background-size: 200% auto;
+  .input-brutal::placeholder {
+    color: hsl(var(--muted-foreground));
+    font-weight: 500;
+  }
+
+  .input-brutal:focus {
+    outline: none;
+    border-color: hsl(var(--primary));
+  }
+
+  /* Typography */
+  .text-display {
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 0.9;
+  }
+
+  .text-mono {
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* Price Indicators */
+  .price-tag {
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: hsl(var(--foreground));
+  }
+
+  /* Discount Badge */
+  .discount-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem 0.625rem;
+    background-color: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+  }
+
+  /* Prime Badge */
+  .prime-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    font-weight: 700;
+    font-size: 0.625rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
   }
 
   /* Skeleton Loading */
   .skeleton {
-    @apply bg-secondary/50 rounded-lg animate-pulse;
+    background-color: hsl(var(--secondary));
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 
-  .skeleton-shimmer {
-    @apply relative overflow-hidden bg-secondary/30;
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
   }
 
-  .skeleton-shimmer::after {
-    content: '';
-    @apply absolute inset-0;
-    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%);
-    background-size: 200% 100%;
-    animation: shimmer 2s infinite;
+  /* Grid Pattern Background */
+  .grid-bg {
+    background-image:
+      linear-gradient(hsl(var(--border)) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px);
+    background-size: 40px 40px;
   }
 
-  /* Stat Card */
-  .stat-card {
-    @apply text-center p-4 rounded-xl bg-secondary/50 border border-border;
+  /* Stat Display */
+  .stat-display {
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    font-size: 2.5rem;
+    line-height: 1;
+    color: hsl(var(--foreground));
   }
 }
 
-/* Animations */
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-}
-
-@keyframes glow-pulse {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
-}
-
-@keyframes slide-up {
+/* Utility Animations */
+@keyframes slideUp {
   from {
     opacity: 0;
     transform: translateY(20px);
@@ -206,66 +266,11 @@
   }
 }
 
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-.animate-glow {
-  animation: glow-pulse 3s ease-in-out infinite;
-}
-
 .animate-slide-up {
-  animation: slide-up 0.5s ease-out;
+  animation: slideUp 0.4s ease-out;
 }
 
-/* Ambient Background Effects */
-.ambient-glow {
-  position: relative;
-}
-
-.ambient-glow::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, hsl(var(--primary) / 0.08) 0%, transparent 70%);
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  z-index: -1;
-}
-
-/* Noise Texture */
-.noise-overlay {
-  position: relative;
-}
-
-.noise-overlay::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  opacity: 0.02;
-  mix-blend-mode: overlay;
-  pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-}
-
-/* Grid Pattern */
-.grid-pattern {
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-  background-size: 50px 50px;
-  mask-image: radial-gradient(ellipse 80% 50% at 50% 50%, black, transparent);
-  -webkit-mask-image: radial-gradient(ellipse 80% 50% at 50% 50%, black, transparent);
-}
-
-/* Smooth Transitions */
-.transition-smooth {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.transition-bounce {
-  transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+/* Sharp Transitions */
+.transition-sharp {
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }

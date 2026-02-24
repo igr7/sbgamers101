@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api, PriceHistoryEntry } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
-import { formatPrice, analyzeDeal } from '@/lib/utils';
+import { formatPrice, analyzePriceHistory } from '@/lib/utils';
 
 interface Props {
   asin: string;
@@ -29,15 +29,15 @@ export default function PriceChart({ asin, currentPrice, originalPrice }: Props)
     return <div className="animate-pulse h-64 bg-white/[0.03] rounded-2xl" />;
   }
 
-  const dealVerdict = analyzeDeal(currentPrice, originalPrice, history);
+  const dealVerdict = analyzePriceHistory(currentPrice, history);
   const maxPrice = Math.max(...history.map((h) => h.price), currentPrice, originalPrice);
   const minPrice = Math.min(...history.map((h) => h.price), currentPrice);
   const avgPrice = history.length > 0
     ? Math.round(history.reduce((sum, h) => sum + h.price, 0) / history.length)
     : currentPrice;
 
-  const verdictConfig = {
-    real: {
+  const verdictConfig: Record<string, any> = {
+    down: {
       bg: 'bg-emerald-500/[0.08]',
       border: 'border-emerald-500/20',
       icon: (
@@ -45,9 +45,9 @@ export default function PriceChart({ asin, currentPrice, originalPrice }: Props)
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       ),
-      label: lang === 'ar' ? 'خصم حقيقي' : 'Genuine Deal',
+      label: lang === 'ar' ? 'سعر منخفض' : 'Price Dropped',
     },
-    fake: {
+    up: {
       bg: 'bg-red-500/[0.08]',
       border: 'border-red-500/20',
       icon: (
@@ -55,9 +55,9 @@ export default function PriceChart({ asin, currentPrice, originalPrice }: Props)
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
         </svg>
       ),
-      label: lang === 'ar' ? 'خصم مشبوه' : 'Suspicious Discount',
+      label: lang === 'ar' ? 'سعر مرتفع' : 'Price Increased',
     },
-    unknown: {
+    stable: {
       bg: 'bg-amber-500/[0.08]',
       border: 'border-amber-500/20',
       icon: (
@@ -65,11 +65,11 @@ export default function PriceChart({ asin, currentPrice, originalPrice }: Props)
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       ),
-      label: lang === 'ar' ? 'بيانات غير كافية' : 'Insufficient Data',
+      label: lang === 'ar' ? 'سعر مستقر' : 'Price Stable',
     },
   };
 
-  const verdict = verdictConfig[dealVerdict];
+  const verdict = verdictConfig[dealVerdict.trend];
 
   return (
     <div className="space-y-6">
@@ -87,7 +87,11 @@ export default function PriceChart({ asin, currentPrice, originalPrice }: Props)
         <div>
           <p className="font-semibold text-sm text-white mb-0.5">{verdict.label}</p>
           <p className="text-xs text-gray-400 leading-relaxed">
-            {t(`product.${dealVerdict === 'real' ? 'realDeal' : dealVerdict === 'fake' ? 'fakeDeal' : 'notEnoughData'}`)}
+            {dealVerdict.trend === 'down'
+              ? t('product.priceDropped')
+              : dealVerdict.trend === 'up'
+              ? t('product.priceIncreased')
+              : t('product.priceStable')}
           </p>
         </div>
       </div>
@@ -221,7 +225,7 @@ export default function PriceChart({ asin, currentPrice, originalPrice }: Props)
                   textAnchor="middle"
                   fontFamily="Inter"
                 >
-                  {entry.recorded_at}
+                  {new Date(entry.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </text>
               );
             })}

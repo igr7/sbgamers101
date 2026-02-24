@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { SanitizedProduct } from '@/lib/productWrapper';
+import { ErrorBoundary, ProductCardErrorFallback } from '@/components/ErrorBoundary';
 
 interface Props {
   product: SanitizedProduct;
@@ -15,12 +16,13 @@ export default function PremiumProductCard({ product, index = 0 }: Props) {
   const [imageError, setImageError] = useState(false);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.05 }}
-      className="group relative"
-    >
+    <ErrorBoundary fallback={<ProductCardErrorFallback />}>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: index * 0.05 }}
+        className="group relative"
+      >
       {/* Hover Glow Effect */}
       <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 rounded-2xl opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500" />
 
@@ -198,5 +200,6 @@ export default function PremiumProductCard({ product, index = 0 }: Props) {
         </div>
       </div>
     </motion.div>
+    </ErrorBoundary>
   );
 }

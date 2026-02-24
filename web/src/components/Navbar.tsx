@@ -20,31 +20,31 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-2xl border-b border-border">
+    <nav className="sticky top-0 z-50 bg-background border-b-2 border-border">
       <div className="container-main">
         <div className="flex items-center justify-between h-16 gap-4">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 shrink-0 group">
-            <div className="relative">
-              <div className="absolute inset-0 bg-primary/20 rounded-xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity" />
-              <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-amber-600 flex items-center justify-center shadow-lg shadow-primary/20">
-                <span className="text-black font-black text-lg">SB</span>
-              </div>
+            <div className="w-10 h-10 bg-foreground flex items-center justify-center">
+              <span className="text-background font-black text-lg text-mono">SB</span>
             </div>
             <div className="hidden sm:flex flex-col">
-              <span className="text-foreground font-black text-lg leading-none tracking-tight">SB Gamers</span>
-              <span className="text-xs text-muted-foreground font-medium">Tech Aggregator</span>
+              <span className="text-foreground font-black text-base leading-none tracking-tight uppercase">
+                SB Gamers
+              </span>
+              <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+                Saudi Arabia
+              </span>
             </div>
           </Link>
 
           {/* Nav Links - Desktop */}
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-1">
             <Link href="/" className="btn-ghost">
               Home
             </Link>
-            <Link href="/deals" className="btn-ghost flex items-center gap-1">
-              <span>🔥</span>
-              <span>Deals</span>
+            <Link href="/deals" className="btn-ghost">
+              Deals
             </Link>
             <Link href="/categories" className="btn-ghost">
               Categories
@@ -54,36 +54,38 @@ export default function Navbar() {
           {/* Search - Desktop */}
           <form onSubmit={handleSearch} className="hidden md:block flex-1 max-w-md">
             <div className="relative">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
               <input
                 type="text"
-                placeholder="Search for products..."
+                placeholder="SEARCH PRODUCTS..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="input-modern pl-10"
+                className="input-brutal text-sm"
               />
+              <button
+                type="submit"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-secondary transition-sharp"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="square" strokeLinejoin="miter" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </button>
             </div>
           </form>
 
-          {/* Right side */}
-          <div className="flex items-center gap-2">
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="md:hidden btn-ghost p-2"
-              aria-label="Toggle menu"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {menuOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                )}
-              </svg>
-            </button>
-          </div>
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="md:hidden btn-ghost p-2"
+            aria-label="Toggle menu"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {menuOpen ? (
+                <path strokeLinecap="square" strokeLinejoin="miter" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="square" strokeLinejoin="miter" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
         </div>
 
         {/* Mobile Menu */}
@@ -92,22 +94,17 @@ export default function Navbar() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden border-t border-border py-4 space-y-3"
+            className="md:hidden border-t-2 border-border py-4 space-y-3"
           >
             {/* Mobile Search */}
             <form onSubmit={handleSearch} className="px-2">
-              <div className="relative">
-                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <input
-                  type="text"
-                  placeholder="Search products..."
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  className="input-modern pl-10"
-                />
-              </div>
+              <input
+                type="text"
+                placeholder="SEARCH PRODUCTS..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="input-brutal text-sm"
+              />
             </form>
 
             {/* Mobile Links */}
@@ -115,9 +112,8 @@ export default function Navbar() {
               <Link href="/" className="btn-ghost justify-start" onClick={() => setMenuOpen(false)}>
                 Home
               </Link>
-              <Link href="/deals" className="btn-ghost justify-start flex items-center gap-2" onClick={() => setMenuOpen(false)}>
-                <span>🔥</span>
-                <span>Hot Deals</span>
+              <Link href="/deals" className="btn-ghost justify-start" onClick={() => setMenuOpen(false)}>
+                Deals
               </Link>
               <Link href="/categories" className="btn-ghost justify-start" onClick={() => setMenuOpen(false)}>
                 Categories

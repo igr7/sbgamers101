@@ -70,7 +70,7 @@ export interface ProductFull {
 
 export interface PriceHistoryEntry {
   price: number;
-  recorded_at: string;
+  timestamp: number;
 }
 
 export interface PaginatedResponse<T> {
@@ -79,7 +79,7 @@ export interface PaginatedResponse<T> {
   totalPages: number;
 }
 
-async function fetchApi<T>(path: string, params: Record<string, string | number | undefined> = {}): Promise<T> {
+async function fetchApi<T>(path: string, params: Record<string, string | number | undefined> = {}, revalidate?: number): Promise<T> {
   const url = new URL(`/api/v1${path}`, API_BASE);
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
@@ -91,7 +91,7 @@ async function fetchApi<T>(path: string, params: Record<string, string | number 
     headers: {
       'Content-Type': 'application/json',
     },
-    cache: 'no-store',
+    next: revalidate ? { revalidate } : { revalidate: 900 }, // Default 15 min cache
   });
 
   if (!res.ok) {
@@ -104,7 +104,7 @@ async function fetchApi<T>(path: string, params: Record<string, string | number 
 
 export const api = {
   getCategories: async (): Promise<Category[]> => {
-    const res = await fetchApi<{ success: boolean; data: Category[] }>('/categories');
+    const res = await fetchApi<{ success: boolean; data: Category[] }>('/categories', {}, 3600); // 1 hour cache
     return res.data || [];
   },
 
@@ -131,7 +131,7 @@ export const api = {
         total_count: number;
         total_pages: number;
       };
-    }>('/deals', { page, min_discount: minDiscount, limit: 20 });
+    }>('/deals', { page, min_discount: minDiscount, limit: 20 }, 900); // 15 min cache for deals
 
     const products: Product[] = (res.data?.deals || []).map((d) => ({
       asin: d.asin,
@@ -177,7 +177,7 @@ export const api = {
         }>;
         total_results: number;
       };
-    }>('/search', { q: query, page });
+    }>('/search', { q: query, page }, 600); // 10 min cache for search results
 
     const products: Product[] = (res.data?.products || []).map((p) => ({
       asin: p.asin,
@@ -249,7 +249,7 @@ export const api = {
           attributes: Record<string, string>;
         }>;
       };
-    }>(`/product/${asin}`);
+    }>(`/product/${asin}`, {}, 1800); // 30 min cache for product details
 
     if (!res.success || !res.data) return null;
 
@@ -305,7 +305,7 @@ export const api = {
         total_pages: number;
         category_name: string;
       };
-    }>(`/category/${slug}`, { page, sort, limit: 50 });
+    }>(`/category/${slug}`, { page, sort, limit: 50 }, 1800); // 30 min cache for category listings
 
     const products: Product[] = (res.data?.products || []).map((p) => ({
       asin: p.asin,
@@ -342,11 +342,11 @@ export const api = {
             timestamp: string;
           }>;
         };
-      }>(`/price-history/${asin}`, { days: 30 });
+      }>(`/price-history/${asin}`, { days: 30 }, 3600); // 1 hour cache for price history
 
       return (res.data?.history || []).map((h) => ({
         price: h.price,
-        recorded_at: new Date(h.timestamp).toLocaleDateString(),
+        timestamp: new Date(h.timestamp).getTime(),
       }));
     } catch {
       return [];

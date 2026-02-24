@@ -4,97 +4,141 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { api, Product } from '@/lib/api';
-import { useI18n } from '@/lib/i18n';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
-import Pagination from '@/components/Pagination';
 import FilterSidebar, { Filters } from '@/components/FilterSidebar';
+import { ErrorBoundary, ProductGridErrorFallback } from '@/components/ErrorBoundary';
+import { getCategoryEmoji } from '@/lib/utils';
 
 export default function CategoryPageClient() {
   const { slug } = useParams<{ slug: string }>();
-  const { t } = useI18n();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [filtered, setFiltered] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
   const [categoryName, setCategoryName] = useState('');
-  const [filters, setFilters] = useState<Filters>({ sort: 'discount_desc' });
+  const [filters, setFilters] = useState<Filters>({ sort: 'discount' });
 
   useEffect(() => {
     setLoading(true);
-    api.getCategoryProducts(slug, page, filters.sort)
+    api.getCategoryProducts(slug, 1, 'popular')
       .then((res) => {
-        setProducts(res.products);
-        setTotalPages(res.totalPages);
-        setTotal(res.total);
-        if (res.products[0]?.category_name) setCategoryName(res.products[0].category_name);
+        setAllProducts(res.products);
+        if (res.products[0]?.category_name) {
+          setCategoryName(res.products[0].category_name);
+        }
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [slug, page, filters.sort]);
+  }, [slug]);
 
   const applyFilters = useCallback((prods: Product[], f: Filters) => {
     let result = [...prods];
+
+    // Price filters
     if (f.min_price) result = result.filter(p => p.current_price >= f.min_price!);
     if (f.max_price) result = result.filter(p => p.current_price <= f.max_price!);
-    if (f.min_discount) result = result.filter(p => p.discount_pct >= f.min_discount!);
-    if (f.min_rating) result = result.filter(p => p.rating >= f.min_rating!);
+
+    // Prime filter
+    if (f.prime_only) result = result.filter(p => p.is_prime);
+
+    // Sort
+    switch (f.sort) {
+      case 'discount':
+        result.sort((a, b) => b.discount_pct - a.discount_pct);
+        break;
+      case 'price_asc':
+        result.sort((a, b) => a.current_price - b.current_price);
+        break;
+      case 'price_desc':
+        result.sort((a, b) => b.current_price - a.current_price);
+        break;
+      case 'rating':
+        result.sort((a, b) => b.rating - a.rating);
+        break;
+    }
+
     return result;
   }, []);
 
   useEffect(() => {
-    setFiltered(applyFilters(products, filters));
-  }, [products, filters, applyFilters]);
+    setFilteredProducts(applyFilters(allProducts, filters));
+  }, [filters, allProducts, applyFilters]);
 
   return (
     <>
       <Navbar />
       <main className="flex-1 container-main py-8">
-        <div className="flex items-center gap-2 text-xs text-gray-600 mb-6">
-          <Link href="/" className="hover:text-gray-400">{t('nav.home')}</Link>
-          <span>/</span>
-          <Link href="/categories" className="hover:text-gray-400">{t('nav.categories')}</Link>
-          <span>/</span>
-          <span className="text-gray-400">{categoryName || slug}</span>
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider mb-6">
+          <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">
+            Home
+          </Link>
+          <span className="text-border">/</span>
+          <Link href="/categories" className="text-muted-foreground hover:text-foreground transition-colors">
+            Categories
+          </Link>
+          <span className="text-border">/</span>
+          <span className="text-foreground">{categoryName || slug}</span>
         </div>
 
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-white">{categoryName || slug}</h1>
-          <p className="text-sm text-gray-500 mt-1">{total} {t('common.products')}</p>
+        {/* Header */}
+        <div className="mb-8 border-l-4 border-primary pl-6">
+          <div className="flex items-center gap-4 mb-2">
+            <span className="text-5xl">{getCategoryEmoji(slug)}</span>
+            <h1 className="text-4xl font-black uppercase tracking-tight">
+              {categoryName || slug}
+            </h1>
+          </div>
+          <p className="text-muted-foreground text-sm font-semibold uppercase tracking-wide">
+            {filteredProducts.length} Products Available
+          </p>
         </div>
 
-        <FilterSidebar filters={filters} onChange={(f) => { setFilters(f); setPage(1); }} />
+        <div className="flex gap-8">
+          {/* Filters */}
+          <FilterSidebar filters={filters} onChange={setFilters} />
 
-        <div className="flex gap-6">
+          {/* Products Grid */}
           <div className="flex-1 min-w-0">
             {loading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="bg-[#111118] border border-white/[0.06] rounded-xl overflow-hidden animate-pulse">
-                    <div className="aspect-square bg-white/[0.03]" />
-                    <div className="p-3 space-y-2">
-                      <div className="h-3 bg-white/[0.04] rounded w-full" />
-                      <div className="h-3 bg-white/[0.04] rounded w-2/3" />
-                      <div className="h-5 bg-white/[0.06] rounded w-20 mt-2" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <div key={i} className="card-brutal overflow-hidden animate-pulse">
+                    <div className="aspect-square bg-secondary" />
+                    <div className="p-4 space-y-3">
+                      <div className="h-3 bg-secondary w-3/4" />
+                      <div className="h-3 bg-secondary w-1/2" />
+                      <div className="h-6 bg-secondary w-1/3" />
                     </div>
                   </div>
                 ))}
               </div>
-            ) : filtered.length === 0 ? (
-              <div className="text-center py-16">
-                <p className="text-gray-500">{t('common.noResults')}</p>
+            ) : filteredProducts.length === 0 ? (
+              <div className="text-center py-20 card-brutal">
+                <div className="text-7xl mb-6">📦</div>
+                <h3 className="text-2xl font-black uppercase mb-3">
+                  No Products Found
+                </h3>
+                <p className="text-muted-foreground max-w-md mx-auto mb-8 font-semibold">
+                  Try adjusting your filters or check back later
+                </p>
+                <button
+                  onClick={() => setFilters({ sort: 'discount' })}
+                  className="btn-primary"
+                >
+                  Clear Filters
+                </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {filtered.map((product) => (
-                  <ProductCard key={product.asin} product={product} />
-                ))}
-              </div>
+              <ErrorBoundary fallback={<ProductGridErrorFallback onRetry={() => window.location.reload()} />}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredProducts.map((product) => (
+                    <ProductCard key={product.asin} product={product} />
+                  ))}
+                </div>
+              </ErrorBoundary>
             )}
-            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
           </div>
         </div>
       </main>

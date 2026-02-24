@@ -3,103 +3,124 @@
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { api, Product } from '@/lib/api';
-import { useI18n } from '@/lib/i18n';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
-import Pagination from '@/components/Pagination';
 import FilterSidebar, { Filters } from '@/components/FilterSidebar';
+import { ErrorBoundary, ProductGridErrorFallback } from '@/components/ErrorBoundary';
 
 function SearchResults() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || '';
-  const { t, lang } = useI18n();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [filtered, setFiltered] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [filters, setFilters] = useState<Filters>({ sort: 'relevance' });
+  const [filters, setFilters] = useState<Filters>({ sort: 'discount' });
 
   useEffect(() => {
-    if (!query) { setProducts([]); setLoading(false); return; }
+    if (!query) {
+      setAllProducts([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
-    setPage(1);
     api.searchProducts(query, 1)
       .then((res) => {
-        setProducts(res.products);
-        setTotalPages(res.totalPages);
-        setTotal(res.total);
+        setAllProducts(res.products);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [query]);
 
-  // Client-side filtering
   const applyFilters = useCallback((prods: Product[], f: Filters) => {
     let result = [...prods];
+
+    // Price filters
     if (f.min_price) result = result.filter(p => p.current_price >= f.min_price!);
     if (f.max_price) result = result.filter(p => p.current_price <= f.max_price!);
-    if (f.min_discount) result = result.filter(p => p.discount_pct >= f.min_discount!);
-    if (f.min_rating) result = result.filter(p => p.rating >= f.min_rating!);
+
+    // Prime filter
+    if (f.prime_only) result = result.filter(p => p.is_prime);
+
     // Sort
     switch (f.sort) {
-      case 'price_asc': result.sort((a, b) => a.current_price - b.current_price); break;
-      case 'price_desc': result.sort((a, b) => b.current_price - a.current_price); break;
-      case 'rating': result.sort((a, b) => b.rating - a.rating); break;
-      case 'most_reviewed': result.sort((a, b) => b.ratings_total - a.ratings_total); break;
+      case 'discount':
+        result.sort((a, b) => b.discount_pct - a.discount_pct);
+        break;
+      case 'price_asc':
+        result.sort((a, b) => a.current_price - b.current_price);
+        break;
+      case 'price_desc':
+        result.sort((a, b) => b.current_price - a.current_price);
+        break;
+      case 'rating':
+        result.sort((a, b) => b.rating - a.rating);
+        break;
     }
+
     return result;
   }, []);
 
   useEffect(() => {
-    setFiltered(applyFilters(products, filters));
-  }, [products, filters, applyFilters]);
+    setFilteredProducts(applyFilters(allProducts, filters));
+  }, [filters, allProducts, applyFilters]);
 
   return (
     <main className="flex-1 container-main py-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">
+      {/* Header */}
+      <div className="mb-8 border-l-4 border-accent pl-6">
+        <h1 className="text-4xl font-black uppercase tracking-tight mb-2">
           {query ? (
             <>
-              {t('search.resultsFor')}{' '}
-              <span className="text-emerald-400">&ldquo;{query}&rdquo;</span>
+              Search: <span className="text-accent">{query}</span>
             </>
-          ) : t('nav.search')}
+          ) : 'Search'}
         </h1>
-        {total > 0 && <p className="text-sm text-gray-500 mt-1">{total} {t('common.products')}</p>}
+        {filteredProducts.length > 0 && (
+          <p className="text-muted-foreground text-sm font-semibold uppercase tracking-wide">
+            {filteredProducts.length} Products Found
+          </p>
+        )}
       </div>
 
-      <FilterSidebar filters={filters} onChange={setFilters} />
+      <div className="flex gap-8">
+        {/* Filters */}
+        <FilterSidebar filters={filters} onChange={setFilters} />
 
-      <div className="flex gap-6">
+        {/* Products Grid */}
         <div className="flex-1 min-w-0">
           {loading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="bg-[#111118] border border-white/[0.06] rounded-xl overflow-hidden animate-pulse">
-                  <div className="aspect-square bg-white/[0.03]" />
-                  <div className="p-3 space-y-2">
-                    <div className="h-3 bg-white/[0.04] rounded w-full" />
-                    <div className="h-3 bg-white/[0.04] rounded w-2/3" />
-                    <div className="h-5 bg-white/[0.06] rounded w-20 mt-2" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <div key={i} className="card-brutal overflow-hidden animate-pulse">
+                  <div className="aspect-square bg-secondary" />
+                  <div className="p-4 space-y-3">
+                    <div className="h-3 bg-secondary w-3/4" />
+                    <div className="h-3 bg-secondary w-1/2" />
+                    <div className="h-6 bg-secondary w-1/3" />
                   </div>
                 </div>
               ))}
             </div>
-          ) : filtered.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="text-gray-500">{t('common.noResults')}</p>
+          ) : filteredProducts.length === 0 ? (
+            <div className="text-center py-20 card-brutal">
+              <div className="text-7xl mb-6">🔍</div>
+              <h3 className="text-2xl font-black uppercase mb-3">
+                No Results Found
+              </h3>
+              <p className="text-muted-foreground max-w-md mx-auto font-semibold">
+                {query ? `No products found for "${query}"` : 'Enter a search query to find products'}
+              </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {filtered.map((product) => (
-                <ProductCard key={product.asin} product={product} />
-              ))}
-            </div>
+            <ErrorBoundary fallback={<ProductGridErrorFallback onRetry={() => window.location.reload()} />}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredProducts.map((product) => (
+                  <ProductCard key={product.asin} product={product} />
+                ))}
+              </div>
+            </ErrorBoundary>
           )}
-          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
         </div>
       </div>
     </main>
@@ -112,7 +133,7 @@ export default function SearchPage() {
       <Navbar />
       <Suspense fallback={
         <div className="flex-1 flex items-center justify-center py-20">
-          <div className="w-6 h-6 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-border border-t-primary animate-spin" />
         </div>
       }>
         <SearchResults />
