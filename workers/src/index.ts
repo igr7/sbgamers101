@@ -1,6 +1,6 @@
 interface Env {
   CACHE: KVNamespace;
-  DECODO_API_KEY: string;
+  RAPIDAPI_KEY: string;
 }
 
 const CATEGORIES = {
@@ -12,50 +12,45 @@ const CATEGORIES = {
   headset: { name_en: 'Headsets', name_ar: 'سماعات الرأس' },
 };
 
-async function callDecodoAPI(query: string, apiKey: string): Promise<any> {
+async function callAmazonAPI(query: string, apiKey: string): Promise<any> {
   if (!apiKey) {
-    throw new Error('DECODO_API_KEY not set');
+    throw new Error('RAPIDAPI_KEY not set');
   }
 
-  const response = await fetch('https://realtime.oxylabs.io/v1/queries', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Basic ${apiKey}`,
-    },
-    body: JSON.stringify({
-      source: 'amazon_search',
-      domain: 'sa',
-      query: query,
-      parse: true,
-    }),
-  });
+  const response = await fetch(
+    `https://real-time-amazon-data.p.rapidapi.com/search?query=${encodeURIComponent(query)}&page=1&country=SA&sort_by=RELEVANCE&product_condition=ALL`,
+    {
+      method: 'GET',
+      headers: {
+        'x-rapidapi-key': apiKey,
+        'x-rapidapi-host': 'real-time-amazon-data.p.rapidapi.com',
+      },
+    }
+  );
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Decodo API error: ${response.status} - ${errorText}`);
+    throw new Error(`Amazon API error: ${response.status} - ${errorText}`);
   }
 
   return response.json();
 }
 
-function mapProduct(item: any) {
+function mapAmazonProduct(item: any) {
   return {
     asin: item.asin || '',
-    title: item.title || '',
-    main_image: item.url_image || item.image || '',
-    price: item.price || null,
-    original_price: item.price_strikethrough || null,
-    discount_percentage: item.price_strikethrough && item.price
-      ? Math.round(((item.price_strikethrough - item.price) / item.price_strikethrough) * 100)
-      : null,
-    rating: item.rating || null,
-    ratings_count: item.ratings_total || null,
+    title: item.product_title || '',
+    main_image: item.product_photo || '',
+    price: item.product_price ? parseFloat(item.product_price.replace(/[^0-9.]/g, '')) : null,
+    original_price: item.product_original_price ? parseFloat(item.product_original_price.replace(/[^0-9.]/g, '')) : null,
+    discount_percentage: item.sales_volume ? parseInt(item.sales_volume.replace(/[^0-9]/g, '')) : null,
+    rating: item.product_star_rating ? parseFloat(item.product_star_rating) : null,
+    ratings_count: item.product_num_ratings || null,
     is_prime: item.is_prime || false,
     is_best_seller: item.is_best_seller || false,
     is_amazon_choice: item.is_amazon_choice || false,
     currency: 'SAR',
-    amazon_url: item.url || `https://www.amazon.sa/dp/${item.asin}`,
+    amazon_url: item.product_url || `https://www.amazon.sa/dp/${item.asin}`,
   };
 }
 
@@ -78,6 +73,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       return new Response(JSON.stringify({
         success: true,
         status: 'healthy',
+        api: 'rapidapi',
         timestamp: new Date().toISOString(),
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -111,9 +107,9 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         });
       }
 
-      const result = await callDecodoAPI('Graphics Cards', env.DECODO_API_KEY);
-      const products = (result.results?.[0]?.content?.results?.results?.organic || [])
-        .map(mapProduct)
+      const result = await callAmazonAPI('Graphics Cards', env.RAPIDAPI_KEY);
+      const products = (result.data?.products || [])
+        .map(mapAmazonProduct)
         .slice(0, limit);
 
       const response = {
@@ -126,7 +122,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
           deals: products.map(p => ({ ...p, category_slug: 'gpu', category_name: 'Graphics Cards' })),
         },
         cached: false,
-        source: 'decodo_api',
+        source: 'rapidapi_amazon',
       };
 
       const responseStr = JSON.stringify(response);
@@ -162,9 +158,9 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         });
       }
 
-      const result = await callDecodoAPI(category.name_en, env.DECODO_API_KEY);
-      const products = (result.results?.[0]?.content?.results?.results?.organic || [])
-        .map(mapProduct)
+      const result = await callAmazonAPI(category.name_en, env.RAPIDAPI_KEY);
+      const products = (result.data?.products || [])
+        .map(mapAmazonProduct)
         .slice(0, limit);
 
       const response = {
@@ -179,7 +175,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
           products,
         },
         cached: false,
-        source: 'decodo_api',
+        source: 'rapidapi_amazon',
       };
 
       const responseStr = JSON.stringify(response);
