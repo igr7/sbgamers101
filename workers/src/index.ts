@@ -462,6 +462,54 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       });
     }
 
+    if (path === '/api/v1/search') {
+      const query = url.searchParams.get('q');
+
+      if (!query || query.trim().length === 0) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'MISSING_QUERY',
+          message: 'Search query is required',
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const cacheKey = `search:${query.toLowerCase().trim()}`;
+
+      const cached = await env.CACHE.get(cacheKey);
+      if (cached) {
+        return new Response(cached, {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Search Amazon directly with the user's query
+      const result = await searchAmazonSA(query, env.RAPIDAPI_KEY);
+      const products = (result.products || [])
+        .map(mapAmazonProduct)
+        .filter((p: any) => p.price && p.price > 0)
+        .slice(0, 50);
+
+      const response = {
+        success: true,
+        data: {
+          products,
+          total_results: products.length,
+        },
+        cached: false,
+        source: 'amazon_sa',
+      };
+
+      const responseStr = JSON.stringify(response);
+      await env.CACHE.put(cacheKey, responseStr, { expirationTtl: 600 });
+
+      return new Response(responseStr, {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     return new Response(JSON.stringify({
       success: false,
       error: 'NOT_FOUND',
