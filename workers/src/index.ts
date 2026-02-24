@@ -5,17 +5,24 @@ interface Env {
 }
 
 const CATEGORIES = {
-  gpu: { name_en: 'Gaming Graphics Cards RTX', name_ar: 'كرت الشاشة للألعاب' },
-  cpu: { name_en: 'Gaming Processors', name_ar: 'معالجات الألعاب' },
-  monitor: { name_en: 'Gaming Monitors', name_ar: 'شاشات الألعاب' },
-  keyboard: { name_en: 'Gaming Keyboards Mechanical', name_ar: 'لوحات مفاتيح الألعاب' },
-  mouse: { name_en: 'Gaming Mouse', name_ar: 'فأرة الألعاب' },
-  headset: { name_en: 'Gaming Headsets', name_ar: 'سماعات رأس الألعاب' },
+  gpu: { name: 'Graphics Cards', search_query: 'Gaming Graphics Cards RTX 4090 4080 4070' },
+  cpu: { name: 'Processors', search_query: 'Gaming Processors Intel AMD Ryzen' },
+  monitor: { name: 'Gaming Monitors', search_query: 'Gaming Monitors 144Hz 240Hz' },
+  keyboard: { name: 'Gaming Keyboards', search_query: 'Mechanical Gaming Keyboards RGB' },
+  mouse: { name: 'Gaming Mouse', search_query: 'Gaming Mouse High DPI' },
+  headset: { name: 'Gaming Headsets', search_query: 'Gaming Headsets Wireless' },
+  ram: { name: 'Memory (RAM)', search_query: 'Gaming RAM DDR5 DDR4' },
+  ssd: { name: 'Storage (SSD)', search_query: 'NVMe SSD M.2 Gaming' },
+  motherboard: { name: 'Motherboards', search_query: 'Gaming Motherboard ATX' },
+  psu: { name: 'Power Supply', search_query: 'Gaming PSU Modular 80 Plus' },
+  case: { name: 'PC Cases', search_query: 'Gaming PC Case RGB' },
+  cooling: { name: 'Cooling', search_query: 'CPU Cooler AIO Liquid Cooling' },
 };
 
 async function searchAmazonSA(query: string, apiKey: string): Promise<any> {
+  // Request English content from Amazon.sa with Saudi pricing
   const response = await fetch(
-    `https://scout-amazon-data.p.rapidapi.com/Amazon-Search-Data?query=${encodeURIComponent(query)}&region=SA`,
+    `https://scout-amazon-data.p.rapidapi.com/Amazon-Search-Data?query=${encodeURIComponent(query)}&region=SA&language=en`,
     {
       method: 'GET',
       headers: {
@@ -33,9 +40,9 @@ async function searchAmazonSA(query: string, apiKey: string): Promise<any> {
 }
 
 async function getProductDetails(asin: string, apiKey: string): Promise<any> {
-  // Search by ASIN to get product details
+  // Search by ASIN to get product details in English
   const response = await fetch(
-    `https://scout-amazon-data.p.rapidapi.com/Amazon-Search-Data?query=${asin}&region=SA`,
+    `https://scout-amazon-data.p.rapidapi.com/Amazon-Search-Data?query=${asin}&region=SA&language=en`,
     {
       method: 'GET',
       headers: {
@@ -160,8 +167,8 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       const categories = Object.entries(CATEGORIES).map(([slug, data], index) => ({
         id: String(index + 1),
         slug,
-        name_en: data.name_en,
-        name_ar: data.name_ar,
+        name: data.name,
+        search_query: data.search_query,
       }));
 
       return new Response(JSON.stringify({
@@ -236,7 +243,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         });
       }
 
-      const result = await searchAmazonSA(category.name_en, env.RAPIDAPI_KEY);
+      const result = await searchAmazonSA(category.search_query, env.RAPIDAPI_KEY);
       const products = (result.products || [])
         .map(mapAmazonProduct)
         .filter((p: any) => p.price && p.price > 0 && isGamingProduct(p.title))
@@ -246,8 +253,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         success: true,
         data: {
           category_slug: slug,
-          category_name_en: category.name_en,
-          category_name_ar: category.name_ar,
+          category_name: category.name,
           total_count: products.length,
           page: 1,
           total_pages: 1,

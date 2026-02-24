@@ -3,9 +3,8 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://sbgamers-api.ghmesh
 export interface Category {
   id: string;
   slug: string;
-  name_en: string;
-  name_ar: string;
-  amazon_category_id?: string;
+  name: string;
+  search_query?: string;
 }
 
 export interface Product {
@@ -304,8 +303,7 @@ export const api = {
         }>;
         total_count: number;
         total_pages: number;
-        category_name_en: string;
-        category_name_ar: string;
+        category_name: string;
       };
     }>(`/category/${slug}`, { page, sort, limit: 50 });
 
@@ -322,7 +320,7 @@ export const api = {
       is_best_seller: p.is_best_seller || false,
       is_amazon_choice: p.is_amazon_choice || false,
       category_slug: slug,
-      category_name: res.data?.category_name_en || slug,
+      category_name: res.data?.category_name || slug,
       amazon_url: p.amazon_url || `https://www.amazon.sa/dp/${p.asin}`,
     }));
 

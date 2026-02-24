@@ -4,8 +4,8 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'SB Gamers - Best Gaming Prices in Saudi Arabia | Amazon.sa Price Tracker',
   description:
-    'Compare gaming product prices on Amazon.sa. Track price history, verify real discounts, and find the best deals on GPUs, CPUs, monitors, keyboards, headsets and more.',
-  keywords: 'gaming, price comparison, Saudi Arabia, amazon.sa, PC components, gaming deals, GPU prices, CPU prices, gaming gear, price tracker',
+    'Track gaming product prices on Amazon.sa in real-time. Find verified discounts on GPUs, CPUs, monitors, keyboards, and more. Never overpay for gaming gear again.',
+  keywords: 'gaming prices, Saudi Arabia, amazon.sa, price tracker, GPU deals, gaming gear, PC components, RTX 4090, gaming monitors',
   openGraph: {
     title: 'SB Gamers - Best Gaming Prices in Saudi Arabia',
     description: 'Track prices, verify discounts, and find the best gaming deals on Amazon.sa.',
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" dir="ltr" className="dark" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#08080c" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -32,7 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Tajawal:wght@400;500;700;800&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
           rel="stylesheet"
         />
       </head>
