@@ -42,7 +42,7 @@
   }
 
   .btn-primary {
-    @apply relative group inline-block;
+    @apply relative inline-block;
   }
 
   .btn-primary::before {
@@ -63,7 +63,7 @@
   }
 
   .card-premium {
-    @apply relative group;
+    @apply relative;
   }
 
   .card-premium::before {
