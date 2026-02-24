@@ -141,6 +141,12 @@ export default function ProductCard({ product }: { product: Product }) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const hasDiscount = product.discount_pct > 0 && product.original_price > product.current_price;
 
+  // Use image proxy for faster loading via Cloudflare edge cache
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://sbgamers-api.ghmeshal7.workers.dev';
+  const proxyImageUrl = product.image_url
+    ? `${API_BASE}/api/v1/image-proxy?url=${encodeURIComponent(product.image_url)}`
+    : '/placeholder.png';
+
   return (
     <div style={cardStyle} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-4px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
       <Link href={`/product/${product.asin}`} style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -150,7 +156,7 @@ export default function ProductCard({ product }: { product: Product }) {
           )}
 
           <img
-            src={product.image_url}
+            src={proxyImageUrl}
             alt={product.title}
             style={{ ...imageStyle, display: imageLoaded ? 'block' : 'none' }}
             loading="lazy"

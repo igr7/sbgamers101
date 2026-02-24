@@ -188,10 +188,18 @@ function mapAmazonProduct(item: any) {
   const price = item.product_price ? parseFloat(item.product_price.replace(/[^0-9.]/g, '')) : null;
   const originalPrice = item.product_original_price ? parseFloat(item.product_original_price.replace(/[^0-9.]/g, '')) : null;
 
+  // Optimize image URL - use smaller size (160px instead of 320px)
+  let imageUrl = item.product_image || '';
+  if (imageUrl && imageUrl.includes('_AC_UL320_')) {
+    imageUrl = imageUrl.replace('_AC_UL320_', '_AC_UL160_');
+  } else if (imageUrl && imageUrl.includes('_AC_')) {
+    imageUrl = imageUrl.replace(/_AC_[^.]+\./, '_AC_UL160_.');
+  }
+
   return {
     asin: item.asin || '',
     title: item.product_title || '',
-    main_image: item.product_image || '',
+    main_image: imageUrl,
     price: price,
     original_price: originalPrice || price,
     discount_percentage: originalPrice && price ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0,
@@ -462,6 +470,46 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       });
     }
 
+    // Image proxy endpoint for caching Amazon images on Cloudflare edge
+    if (path === '/api/v1/image-proxy') {
+      const imageUrl = url.searchParams.get('url');
+
+      if (!imageUrl) {
+        return new Response('Missing image URL', { status: 400 });
+      }
+
+      // Validate it's an Amazon image URL
+      if (!imageUrl.includes('media-amazon.com') && !imageUrl.includes('ssl-images-amazon.com')) {
+        return new Response('Invalid image URL', { status: 400 });
+      }
+
+      try {
+        // Fetch the image from Amazon
+        const imageResponse = await fetch(imageUrl, {
+          cf: {
+            cacheTtl: 86400, // Cache for 24 hours on Cloudflare edge
+            cacheEverything: true,
+          },
+        });
+
+        if (!imageResponse.ok) {
+          return new Response('Image not found', { status: 404 });
+        }
+
+        // Return the image with aggressive caching headers
+        return new Response(imageResponse.body, {
+          headers: {
+            ...corsHeaders,
+            'Content-Type': imageResponse.headers.get('Content-Type') || 'image/jpeg',
+            'Cache-Control': 'public, max-age=86400, immutable',
+            'CDN-Cache-Control': 'public, max-age=86400',
+          },
+        });
+      } catch (error) {
+        return new Response('Error fetching image', { status: 500 });
+      }
+    }
+
     if (path === '/api/v1/search') {
       const query = url.searchParams.get('q');
 
@@ -490,7 +538,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       const products = (result.products || [])
         .map(mapAmazonProduct)
         .filter((p: any) => p.price && p.price > 0)
-        .slice(0, 50);
+        .slice(0, 24); // Reduced from 50 to 24 for faster initial load
 
       const response = {
         success: true,
