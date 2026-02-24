@@ -4,12 +4,12 @@ interface Env {
 }
 
 const CATEGORIES = {
-  gpu: { name_en: 'Graphics Cards', name_ar: 'كرت الشاشة' },
-  cpu: { name_en: 'Processors', name_ar: 'المعالجات' },
-  monitor: { name_en: 'Monitors', name_ar: 'الشاشات' },
-  keyboard: { name_en: 'Keyboards', name_ar: 'لوحات المفاتيح' },
-  mouse: { name_en: 'Mouse', name_ar: 'الفأرة' },
-  headset: { name_en: 'Headsets', name_ar: 'سماعات الرأس' },
+  gpu: { name_en: 'Gaming Graphics Cards RTX', name_ar: 'كرت الشاشة للألعاب' },
+  cpu: { name_en: 'Gaming Processors', name_ar: 'معالجات الألعاب' },
+  monitor: { name_en: 'Gaming Monitors', name_ar: 'شاشات الألعاب' },
+  keyboard: { name_en: 'Gaming Keyboards Mechanical', name_ar: 'لوحات مفاتيح الألعاب' },
+  mouse: { name_en: 'Gaming Mouse', name_ar: 'فأرة الألعاب' },
+  headset: { name_en: 'Gaming Headsets', name_ar: 'سماعات رأس الألعاب' },
 };
 
 async function searchAmazonSA(query: string, apiKey: string): Promise<any> {
@@ -29,6 +29,60 @@ async function searchAmazonSA(query: string, apiKey: string): Promise<any> {
   }
 
   return response.json();
+}
+
+async function getProductDetails(asin: string, apiKey: string): Promise<any> {
+  // Search by ASIN to get product details
+  const response = await fetch(
+    `https://scout-amazon-data.p.rapidapi.com/Amazon-Search-Data?query=${asin}&region=SA`,
+    {
+      method: 'GET',
+      headers: {
+        'x-rapidapi-key': apiKey,
+        'x-rapidapi-host': 'scout-amazon-data.p.rapidapi.com',
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Amazon API error: ${response.status}`);
+  }
+
+  const result = await response.json();
+
+  // Find the product with matching ASIN
+  if (result.products && result.products.length > 0) {
+    const product = result.products.find((p: any) => p.asin === asin);
+    return product || result.products[0];
+  }
+
+  return null;
+}
+
+function isGamingProduct(title: string): boolean {
+  const titleLower = title.toLowerCase();
+
+  // Gaming keywords that should be present
+  const gamingKeywords = ['gaming', 'rtx', 'gtx', 'radeon', 'geforce', 'rx ', 'nvidia', 'amd', 'intel', 'mechanical', 'rgb', 'dpi', 'hz', 'fps', 'pc', 'computer', 'esports'];
+
+  // Non-gaming keywords that should exclude the product
+  const excludeKeywords = ['food', 'kitchen', 'cooking', 'coffee', 'tea', 'blender', 'mixer', 'oven', 'refrigerator', 'dishwasher', 'washing', 'vacuum', 'iron', 'fan', 'heater', 'air conditioner', 'furniture', 'bed', 'mattress', 'pillow', 'blanket', 'towel', 'soap', 'shampoo', 'perfume', 'makeup', 'clothing', 'shoes', 'watch', 'jewelry', 'toy', 'baby', 'pet', 'garden', 'tool', 'drill', 'hammer'];
+
+  // Check if product contains any excluded keywords
+  for (const keyword of excludeKeywords) {
+    if (titleLower.includes(keyword)) {
+      return false;
+    }
+  }
+
+  // Check if product contains at least one gaming keyword
+  for (const keyword of gamingKeywords) {
+    if (titleLower.includes(keyword)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function mapAmazonProduct(item: any) {
@@ -106,10 +160,10 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         });
       }
 
-      const result = await searchAmazonSA('Graphics Cards', env.RAPIDAPI_KEY);
+      const result = await searchAmazonSA('Gaming Graphics Cards RTX', env.RAPIDAPI_KEY);
       const products = (result.products || [])
         .map(mapAmazonProduct)
-        .filter((p: any) => p.price && p.price > 0)
+        .filter((p: any) => p.price && p.price > 0 && isGamingProduct(p.title))
         .sort((a: any, b: any) => b.discount_percentage - a.discount_percentage)
         .slice(0, limit);
 
@@ -162,7 +216,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       const result = await searchAmazonSA(category.name_en, env.RAPIDAPI_KEY);
       const products = (result.products || [])
         .map(mapAmazonProduct)
-        .filter((p: any) => p.price && p.price > 0)
+        .filter((p: any) => p.price && p.price > 0 && isGamingProduct(p.title))
         .slice(0, limit);
 
       const response = {
@@ -182,6 +236,69 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
 
       const responseStr = JSON.stringify(response);
       await env.CACHE.put(cacheKey, responseStr, { expirationTtl: 1800 });
+
+      return new Response(responseStr, {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const productMatch = path.match(/^\/api\/v1\/product\/([^\/]+)$/);
+    if (productMatch) {
+      const asin = productMatch[1];
+      const cacheKey = `product:${asin}`;
+
+      const cached = await env.CACHE.get(cacheKey);
+      if (cached) {
+        return new Response(cached, {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const productData = await getProductDetails(asin, env.RAPIDAPI_KEY);
+
+      if (!productData || !productData.product_title) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'PRODUCT_NOT_FOUND',
+        }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const price = productData.product_price ? parseFloat(productData.product_price.replace(/[^0-9.]/g, '')) : null;
+      const originalPrice = productData.product_original_price ? parseFloat(productData.product_original_price.replace(/[^0-9.]/g, '')) : null;
+
+      const product = {
+        asin: productData.asin || asin,
+        title: productData.product_title || '',
+        description: productData.product_description || productData.about_product || '',
+        main_image: productData.product_image || productData.product_photo || '',
+        images: productData.product_photos || [productData.product_image],
+        price: price,
+        original_price: originalPrice || price,
+        discount_percentage: originalPrice && price ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0,
+        rating: productData.product_star_rating ? parseFloat(productData.product_star_rating) : null,
+        ratings_count: productData.product_num_ratings || 0,
+        reviews_count: productData.product_num_reviews || 0,
+        is_prime: productData.is_prime || false,
+        is_best_seller: productData.is_best_seller || false,
+        is_amazon_choice: productData.is_amazon_choice || false,
+        currency: 'SAR',
+        amazon_url: `https://www.amazon.sa/dp/${asin}`,
+        specifications: productData.product_details || {},
+        features: productData.product_features || [],
+        source: 'amazon_sa',
+      };
+
+      const response = {
+        success: true,
+        data: product,
+        cached: false,
+      };
+
+      const responseStr = JSON.stringify(response);
+      await env.CACHE.put(cacheKey, responseStr, { expirationTtl: 3600 });
 
       return new Response(responseStr, {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
