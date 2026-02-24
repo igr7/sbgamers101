@@ -7,8 +7,7 @@ import { api, Product } from '@/lib/api';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
-import FilterSidebar, { Filters } from '@/components/FilterSidebar';
-import { ErrorBoundary, ProductGridErrorFallback } from '@/components/ErrorBoundary';
+import FilterBar, { Filters } from '@/components/FilterBar';
 import CategoryIcon from '@/components/CategoryIcon';
 
 export default function CategoryPageClient() {
@@ -95,58 +94,40 @@ export default function CategoryPageClient() {
           </p>
         </div>
 
-        {/* Filters - Mobile Button */}
-        <div className="lg:hidden mb-6">
-          <FilterSidebar filters={filters} onChange={setFilters} />
-        </div>
+        <FilterBar filters={filters} onChange={setFilters} />
 
-        <div className="flex gap-8">
-          {/* Filters - Desktop Sidebar */}
-          <div className="hidden lg:block">
-            <FilterSidebar filters={filters} onChange={setFilters} />
-          </div>
-
-          {/* Products Grid */}
-          <div className="flex-1 min-w-0">
-            {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <div key={i} className="card-brutal overflow-hidden animate-pulse">
-                    <div className="aspect-square bg-secondary" />
-                    <div className="p-4 space-y-3">
-                      <div className="h-3 bg-secondary w-3/4" />
-                      <div className="h-3 bg-secondary w-1/2" />
-                      <div className="h-6 bg-secondary w-1/3" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : filteredProducts.length === 0 ? (
-              <div className="text-center py-20 card-brutal">
-                <div className="text-7xl mb-6">📦</div>
-                <h3 className="text-2xl font-black uppercase mb-3">
-                  No Products Found
-                </h3>
-                <p className="text-muted-foreground max-w-md mx-auto mb-8 font-semibold">
-                  Try adjusting your filters or check back later
-                </p>
-                <button
-                  onClick={() => setFilters({ sort: 'discount' })}
-                  className="btn-primary"
-                >
-                  Clear Filters
-                </button>
-              </div>
-            ) : (
-              <ErrorBoundary fallback={<ProductGridErrorFallback onRetry={() => window.location.reload()} />}>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredProducts.map((product) => (
-                    <ProductCard key={product.asin} product={product} />
-                  ))}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '16px', padding: '16px 0' }}>
+          {loading ? (
+            Array.from({ length: 12 }).map((_, i) => (
+              <div key={i} style={{ backgroundColor: '#1a1a2e', borderRadius: '12px', overflow: 'hidden' }}>
+                <div style={{ width: '100%', height: '200px', backgroundColor: '#0f0f1a' }} />
+                <div style={{ padding: '12px' }}>
+                  <div style={{ height: '12px', backgroundColor: '#2a2a3e', marginBottom: '8px', width: '75%' }} />
+                  <div style={{ height: '12px', backgroundColor: '#2a2a3e', width: '50%' }} />
                 </div>
-              </ErrorBoundary>
-            )}
-          </div>
+              </div>
+            ))
+          ) : filteredProducts.length === 0 ? (
+            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '80px 20px' }}>
+              <div style={{ fontSize: '64px', marginBottom: '20px' }}>📦</div>
+              <h3 style={{ fontSize: '24px', fontWeight: 'bold', color: '#e4e4e7', marginBottom: '12px' }}>
+                No Products Found
+              </h3>
+              <p style={{ color: '#a1a1aa', marginBottom: '24px' }}>
+                Try adjusting your filters or check back later
+              </p>
+              <button
+                onClick={() => setFilters({ sort: 'discount' })}
+                style={{ padding: '12px 24px', backgroundColor: '#00d2d3', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+                Clear Filters
+              </button>
+            </div>
+          ) : (
+            filteredProducts.map((product) => (
+              <ProductCard key={product.asin} product={product} />
+            ))
+          )}
         </div>
       </main>
       <Footer />

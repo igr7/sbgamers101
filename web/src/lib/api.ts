@@ -1,3 +1,5 @@
+import { cleanProduct } from './utils';
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://sbgamers-api.ghmeshal7.workers.dev';
 
 export interface Category {
@@ -133,21 +135,21 @@ export const api = {
       };
     }>('/deals', { page, min_discount: minDiscount, limit: 20 }, 900); // 15 min cache for deals
 
-    const products: Product[] = (res.data?.deals || []).map((d) => ({
+    const products: Product[] = (res.data?.deals || []).map((d) => cleanProduct({
       asin: d.asin,
-      title: d.title || '',
-      image_url: d.main_image || '',
-      current_price: d.price || 0,
-      original_price: d.original_price || 0,
-      discount_pct: d.discount_percentage || 0,
-      rating: d.rating || 0,
-      ratings_total: d.ratings_count || 0,
-      is_prime: d.is_prime || false,
-      is_best_seller: d.is_best_seller || false,
-      is_amazon_choice: d.is_amazon_choice || false,
-      category_slug: d.category_slug || '',
-      category_name: d.category_name || '',
-      amazon_url: d.amazon_url || `https://www.amazon.sa/dp/${d.asin}`,
+      title: d.title,
+      image_url: d.main_image,
+      price: d.price,
+      original_price: d.original_price,
+      discount_percentage: d.discount_percentage,
+      rating: d.rating,
+      ratings_count: d.ratings_count,
+      is_prime: d.is_prime,
+      is_best_seller: d.is_best_seller,
+      is_amazon_choice: d.is_amazon_choice,
+      category_slug: d.category_slug,
+      category_name: d.category_name,
+      amazon_url: d.amazon_url
     }));
 
     return {
@@ -179,21 +181,19 @@ export const api = {
       };
     }>('/search', { q: query, page }, 600); // 10 min cache for search results
 
-    const products: Product[] = (res.data?.products || []).map((p) => ({
+    const products: Product[] = (res.data?.products || []).map((p) => cleanProduct({
       asin: p.asin,
       title: p.title,
       image_url: p.image_url,
-      current_price: p.price || 0,
-      original_price: p.original_price || 0,
-      discount_pct: p.discount_percentage || 0,
-      rating: p.rating || 0,
-      ratings_total: p.ratings_count || 0,
-      is_prime: p.is_prime || false,
-      is_best_seller: p.is_best_seller || false,
-      is_amazon_choice: p.is_amazon_choice || false,
-      category_slug: '',
-      category_name: '',
-      amazon_url: p.amazon_url || `https://www.amazon.sa/dp/${p.asin}`,
+      price: p.price,
+      original_price: p.original_price,
+      discount_percentage: p.discount_percentage,
+      rating: p.rating,
+      ratings_count: p.ratings_count,
+      is_prime: p.is_prime,
+      is_best_seller: p.is_best_seller,
+      is_amazon_choice: p.is_amazon_choice,
+      amazon_url: p.amazon_url
     }));
 
     return {
@@ -307,21 +307,21 @@ export const api = {
       };
     }>(`/category/${slug}`, { page, sort, limit: 50 }, 1800); // 30 min cache for category listings
 
-    const products: Product[] = (res.data?.products || []).map((p) => ({
+    const products: Product[] = (res.data?.products || []).map((p) => cleanProduct({
       asin: p.asin,
-      title: p.title || '',
-      image_url: p.main_image || '',
-      current_price: p.price || 0,
-      original_price: p.original_price || 0,
-      discount_pct: p.discount_percentage || 0,
-      rating: p.rating || 0,
-      ratings_total: p.ratings_count || 0,
-      is_prime: p.is_prime || false,
-      is_best_seller: p.is_best_seller || false,
-      is_amazon_choice: p.is_amazon_choice || false,
+      title: p.title,
+      image_url: p.main_image,
+      price: p.price,
+      original_price: p.original_price,
+      discount_percentage: p.discount_percentage,
+      rating: p.rating,
+      ratings_count: p.ratings_count,
+      is_prime: p.is_prime,
+      is_best_seller: p.is_best_seller,
+      is_amazon_choice: p.is_amazon_choice,
       category_slug: slug,
       category_name: res.data?.category_name || slug,
-      amazon_url: p.amazon_url || `https://www.amazon.sa/dp/${p.asin}`,
+      amazon_url: p.amazon_url
     }));
 
     return {

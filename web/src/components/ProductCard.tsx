@@ -2,8 +2,139 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Product } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
+
+interface Product {
+  asin: string;
+  title: string;
+  image_url: string;
+  current_price: number;
+  original_price: number;
+  discount_pct: number;
+  rating: number;
+  ratings_total: number;
+  is_prime: boolean;
+  amazon_url: string;
+}
+
+const cardStyle: React.CSSProperties = {
+  backgroundColor: '#1a1a2e',
+  border: '1px solid #2a2a3e',
+  borderRadius: '12px',
+  overflow: 'hidden',
+  display: 'flex',
+  flexDirection: 'column',
+  cursor: 'pointer',
+  transition: 'transform 0.2s',
+  position: 'relative',
+  height: '100%'
+};
+
+const imageContainerStyle: React.CSSProperties = {
+  width: '100%',
+  height: '200px',
+  backgroundColor: '#0f0f1a',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  overflow: 'hidden',
+  position: 'relative'
+};
+
+const imageStyle: React.CSSProperties = {
+  maxWidth: '100%',
+  maxHeight: '100%',
+  objectFit: 'contain',
+  padding: '10px'
+};
+
+const discountBadgeStyle: React.CSSProperties = {
+  position: 'absolute',
+  top: '8px',
+  right: '8px',
+  backgroundColor: '#ff4757',
+  color: '#fff',
+  padding: '4px 8px',
+  borderRadius: '4px',
+  fontSize: '12px',
+  fontWeight: 'bold'
+};
+
+const primeBadgeStyle: React.CSSProperties = {
+  position: 'absolute',
+  bottom: '8px',
+  right: '8px',
+  backgroundColor: '#00d2d3',
+  color: '#000',
+  padding: '3px 6px',
+  borderRadius: '3px',
+  fontSize: '10px',
+  fontWeight: 'bold'
+};
+
+const contentStyle: React.CSSProperties = {
+  padding: '12px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '8px',
+  flex: 1
+};
+
+const titleStyle: React.CSSProperties = {
+  fontSize: '13px',
+  color: '#e4e4e7',
+  lineHeight: '1.4',
+  display: '-webkit-box',
+  WebkitLineClamp: 2,
+  WebkitBoxOrient: 'vertical',
+  overflow: 'hidden',
+  minHeight: '36px'
+};
+
+const ratingContainerStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '6px'
+};
+
+const starStyle: React.CSSProperties = {
+  width: '12px',
+  height: '12px',
+  display: 'inline-block'
+};
+
+const reviewCountStyle: React.CSSProperties = {
+  fontSize: '11px',
+  color: '#a1a1aa'
+};
+
+const priceRowStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'baseline',
+  gap: '8px',
+  marginTop: 'auto'
+};
+
+const currentPriceStyle: React.CSSProperties = {
+  fontSize: '18px',
+  fontWeight: 'bold',
+  color: '#10b981'
+};
+
+const originalPriceStyle: React.CSSProperties = {
+  fontSize: '13px',
+  color: '#71717a',
+  textDecoration: 'line-through'
+};
+
+const loadingSpinnerStyle: React.CSSProperties = {
+  width: '40px',
+  height: '40px',
+  border: '3px solid #2a2a3e',
+  borderTop: '3px solid #00d2d3',
+  borderRadius: '50%',
+  animation: 'spin 1s linear infinite'
+};
 
 export default function ProductCard({ product }: { product: Product }) {
   const [imageError, setImageError] = useState(false);
@@ -11,108 +142,59 @@ export default function ProductCard({ product }: { product: Product }) {
   const hasDiscount = product.discount_pct > 0 && product.original_price > product.current_price;
 
   return (
-    <div className="card-brutal overflow-hidden h-full flex flex-col">
-      <Link href={`/product/${product.asin}`} className="flex flex-col h-full">
-        {/* Image Container */}
-        <div className="relative aspect-square bg-white border-b-2 border-border overflow-hidden">
+    <div style={cardStyle} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-4px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
+      <Link href={`/product/${product.asin}`} style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div style={imageContainerStyle}>
           {!imageLoaded && !imageError && (
-            <div className="absolute inset-0 flex items-center justify-center bg-white">
-              <div className="w-8 h-8 border-2 border-border border-t-accent animate-spin" />
-            </div>
+            <div style={loadingSpinnerStyle} />
           )}
 
-          {imageError ? (
-            <div className="w-full h-full flex items-center justify-center bg-white">
-              <svg className="w-16 h-16 text-border" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                <path strokeLinecap="square" strokeLinejoin="miter" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-          ) : (
-            <img
-              src={product.image_url}
-              alt={product.title}
-              className={`w-full h-full object-contain p-4 transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
-              loading="lazy"
-              onLoad={() => setImageLoaded(true)}
-              onError={() => {
-                console.error('Image failed to load:', product.image_url);
-                setImageError(true);
-              }}
-            />
-          )}
+          <img
+            src={product.image_url}
+            alt={product.title}
+            style={{ ...imageStyle, display: imageLoaded ? 'block' : 'none' }}
+            loading="lazy"
+            onLoad={() => setImageLoaded(true)}
+            onError={(e) => {
+              e.currentTarget.src = '/placeholder.png';
+              setImageError(true);
+              setImageLoaded(true);
+            }}
+          />
 
-          {/* Badges */}
-          <div className="absolute top-2 left-2 right-2 flex items-start justify-between gap-2 pointer-events-none">
-            <div className="flex flex-col gap-1">
-              {hasDiscount && (
-                <div className="discount-badge">
-                  -{product.discount_pct}%
-                </div>
-              )}
-              {product.is_best_seller && (
-                <div className="inline-flex items-center px-2 py-1 bg-foreground text-background text-[10px] font-black uppercase tracking-wider">
-                  Best
-                </div>
-              )}
-            </div>
-
-            {product.is_prime && (
-              <div className="prime-badge">
-                Prime
-              </div>
-            )}
-          </div>
+          {hasDiscount && <div style={discountBadgeStyle}>-{product.discount_pct}%</div>}
+          {product.is_prime && <div style={primeBadgeStyle}>Prime</div>}
         </div>
 
-        {/* Content */}
-        <div className="p-3 sm:p-4 space-y-2 sm:space-y-3 bg-card flex-1 flex flex-col">
-          {/* Category */}
-          {product.category_name && (
-            <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
-              {product.category_name}
-            </div>
-          )}
+        <div style={contentStyle}>
+          <div style={titleStyle}>{product.title}</div>
 
-          {/* Title */}
-          <h3 className="text-xs sm:text-sm font-semibold text-foreground line-clamp-2 hover:text-primary transition-colors leading-tight flex-1">
-            {product.title}
-          </h3>
-
-          {/* Rating */}
           {product.rating > 0 && (
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-0.5">
+            <div style={ratingContainerStyle}>
+              <div style={{ display: 'flex', gap: '2px' }}>
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${
-                      i < Math.floor(product.rating) ? 'bg-accent' : 'bg-border'
-                    }`}
-                  />
+                  <span key={i} style={{ ...starStyle, backgroundColor: i < Math.floor(product.rating) ? '#fbbf24' : '#3f3f46' }} />
                 ))}
               </div>
-              <span className="text-[10px] sm:text-xs text-muted-foreground font-mono">
-                ({product.ratings_total.toLocaleString()})
-              </span>
+              <span style={reviewCountStyle}>({product.ratings_total.toLocaleString()})</span>
             </div>
           )}
 
-          {/* Price */}
-          <div className="pt-2 border-t-2 border-border mt-auto">
-            <div className="flex items-baseline gap-1.5 sm:gap-2 mb-1">
-              <span className="text-lg sm:text-xl font-black text-foreground text-mono">
-                {formatPrice(product.current_price)}
-              </span>
-              <span className="text-[10px] sm:text-xs text-muted-foreground font-mono">SAR</span>
-            </div>
+          <div style={priceRowStyle}>
+            <span style={currentPriceStyle}>{formatPrice(product.current_price)} SAR</span>
             {hasDiscount && (
-              <div className="text-[10px] sm:text-xs text-muted-foreground font-mono line-through">
-                {formatPrice(product.original_price)} SAR
-              </div>
+              <span style={originalPriceStyle}>{formatPrice(product.original_price)} SAR</span>
             )}
           </div>
         </div>
       </Link>
+
+      <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
