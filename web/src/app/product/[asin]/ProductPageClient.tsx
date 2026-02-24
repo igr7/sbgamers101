@@ -83,23 +83,23 @@ export default function ProductPageClient() {
       <Navbar />
       <main className="flex-1 container-main py-8">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-6 flex-wrap font-bold uppercase tracking-wider">
-          <Link href="/" className="hover:text-foreground transition-colors">{t('nav.home')}</Link>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-6 flex-wrap font-bold uppercase tracking-wider overflow-x-auto">
+          <Link href="/" className="hover:text-foreground transition-colors whitespace-nowrap">{t('nav.home')}</Link>
           <span>/</span>
           {product.category_name && (
             <>
-              <span className="hover:text-foreground transition-colors cursor-pointer">{product.category_name}</span>
+              <span className="hover:text-foreground transition-colors cursor-pointer whitespace-nowrap">{product.category_name}</span>
               <span>/</span>
             </>
           )}
-          <span className="text-foreground truncate max-w-[200px]">{product.title}</span>
+          <span className="text-foreground truncate">{product.title}</span>
         </div>
 
         {/* Main Grid */}
-        <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
+        <div className="grid md:grid-cols-2 gap-6 lg:gap-12">
           {/* Images */}
           <div className="space-y-3">
-            <div className="bg-white border-2 border-border p-6 flex items-center justify-center aspect-square">
+            <div className="bg-white border-2 border-border p-4 sm:p-6 flex items-center justify-center aspect-square">
               <img src={selectedImage || product.image_url} alt={product.title} className="max-h-full max-w-full object-contain" />
             </div>
             {allImages.length > 1 && (
@@ -108,7 +108,7 @@ export default function ProductPageClient() {
                   <button
                     key={i}
                     onClick={() => setSelectedImage(img)}
-                    className={`shrink-0 w-16 h-16 border-2 p-1 bg-white transition-colors ${
+                    className={`shrink-0 w-14 h-14 sm:w-16 sm:h-16 border-2 p-1 bg-white transition-colors ${
                       selectedImage === img ? 'border-accent' : 'border-border hover:border-foreground'
                     }`}
                   >
@@ -120,7 +120,7 @@ export default function ProductPageClient() {
           </div>
 
           {/* Details */}
-          <div className="space-y-5">
+          <div className="space-y-4 sm:space-y-5">
             {/* Badges */}
             <div className="flex flex-wrap gap-2">
               {product.is_prime && (
@@ -138,27 +138,27 @@ export default function ProductPageClient() {
               <p className="text-xs text-muted-foreground uppercase tracking-wider font-black">{product.brand}</p>
             )}
 
-            <h1 className="text-xl lg:text-2xl font-black text-foreground leading-tight uppercase">{product.title}</h1>
+            <h1 className="text-lg sm:text-xl lg:text-2xl font-black text-foreground leading-tight uppercase break-words">{product.title}</h1>
 
             {product.rating > 0 && (
               <div className="flex items-center gap-3">
                 <StarRating rating={product.rating} size="md" />
                 <span className="text-sm text-foreground font-black text-mono">{product.rating}</span>
-                <span className="text-sm text-muted-foreground font-bold">({product.ratings_total.toLocaleString()} {t('product.reviews')})</span>
+                <span className="text-xs sm:text-sm text-muted-foreground font-bold">({product.ratings_total.toLocaleString()} {t('product.reviews')})</span>
               </div>
             )}
 
             {/* Price Box */}
-            <div className="card-brutal p-5 border-l-4 border-accent">
-              <div className="flex items-baseline gap-3 flex-wrap">
-                <span className="text-4xl font-black text-foreground text-mono">{formatPrice(product.current_price, lang)}</span>
-                <span className="text-sm text-muted-foreground font-bold uppercase tracking-wider">{t('common.sar')}</span>
+            <div className="card-brutal p-4 sm:p-5 border-l-4 border-accent">
+              <div className="flex items-baseline gap-2 sm:gap-3 flex-wrap">
+                <span className="text-3xl sm:text-4xl font-black text-foreground text-mono">{formatPrice(product.current_price, lang)}</span>
+                <span className="text-xs sm:text-sm text-muted-foreground font-bold uppercase tracking-wider">{t('common.sar')}</span>
                 {hasDiscount && (
-                  <span className="bg-destructive text-background text-xs font-black px-3 py-1 uppercase tracking-wider">-{product.discount_pct}%</span>
+                  <span className="bg-destructive text-background text-xs font-black px-2 sm:px-3 py-1 uppercase tracking-wider">-{product.discount_pct}%</span>
                 )}
               </div>
               {hasDiscount && (
-                <p className="text-muted-foreground text-sm mt-2 font-semibold">
+                <p className="text-muted-foreground text-xs sm:text-sm mt-2 font-semibold">
                   {t('product.was')} <span className="line-through">{formatPrice(product.original_price, lang)} {t('common.sar')}</span>
                 </p>
               )}
@@ -172,7 +172,7 @@ export default function ProductPageClient() {
               href={product.amazon_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-primary flex items-center justify-center gap-2 w-full text-center text-base"
+              className="btn-primary flex items-center justify-center gap-2 w-full text-center text-sm sm:text-base"
             >
               {t('product.buyNow')}
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -182,13 +182,13 @@ export default function ProductPageClient() {
 
             {/* Key Features */}
             {product.key_features.length > 0 && (
-              <div className="card-brutal p-5">
-                <h3 className="text-sm font-black text-foreground mb-3 uppercase tracking-wider border-l-4 border-primary pl-3">{t('product.features')}</h3>
+              <div className="card-brutal p-4 sm:p-5">
+                <h3 className="text-xs sm:text-sm font-black text-foreground mb-3 uppercase tracking-wider border-l-4 border-primary pl-3">{t('product.features')}</h3>
                 <ul className="space-y-2">
                   {product.key_features.slice(0, 5).map((f, i) => (
-                    <li key={i} className="text-sm text-muted-foreground flex gap-3 font-medium">
+                    <li key={i} className="text-xs sm:text-sm text-muted-foreground flex gap-2 sm:gap-3 font-medium">
                       <span className="text-accent mt-0.5 shrink-0 font-black">■</span>
-                      {f}
+                      <span className="break-words">{f}</span>
                     </li>
                   ))}
                 </ul>
@@ -198,32 +198,32 @@ export default function ProductPageClient() {
         </div>
 
         {/* Price History */}
-        <div className="mt-12">
+        <div className="mt-8 sm:mt-12">
           <PriceChart asin={product.asin} currentPrice={product.current_price} originalPrice={product.original_price} />
         </div>
 
         {/* Description */}
         {product.description && (
-          <div className="mt-10 card-brutal p-6">
-            <h2 className="text-lg font-black text-foreground mb-4 uppercase tracking-wider border-l-4 border-primary pl-3">{t('product.description')}</h2>
-            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line font-medium">{product.description}</p>
+          <div className="mt-8 sm:mt-10 card-brutal p-4 sm:p-6">
+            <h2 className="text-base sm:text-lg font-black text-foreground mb-3 sm:mb-4 uppercase tracking-wider border-l-4 border-primary pl-3">{t('product.description')}</h2>
+            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed whitespace-pre-line font-medium break-words">{product.description}</p>
           </div>
         )}
 
         {/* Reviews */}
         {product.top_reviews.length > 0 && (
-          <div className="mt-10">
-            <h2 className="text-lg font-black text-foreground mb-4 uppercase tracking-wider border-l-4 border-primary pl-3">{t('product.reviews')}</h2>
-            <div className="space-y-4">
+          <div className="mt-8 sm:mt-10">
+            <h2 className="text-base sm:text-lg font-black text-foreground mb-3 sm:mb-4 uppercase tracking-wider border-l-4 border-primary pl-3">{t('product.reviews')}</h2>
+            <div className="space-y-3 sm:space-y-4">
               {product.top_reviews.slice(0, 5).map((review) => (
-                <div key={review.review_id} className="card-brutal p-5">
-                  <div className="flex items-center gap-3 mb-3">
+                <div key={review.review_id} className="card-brutal p-4 sm:p-5">
+                  <div className="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
                     <StarRating rating={review.rating} />
-                    <span className="text-sm font-black text-foreground uppercase">{review.review_title}</span>
+                    <span className="text-xs sm:text-sm font-black text-foreground uppercase break-words flex-1">{review.review_title}</span>
                   </div>
-                  <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3 font-medium">{review.review_text}</p>
-                  <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground font-bold uppercase tracking-wider">
-                    <span>{review.reviewer_name}</span>
+                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed line-clamp-3 font-medium break-words">{review.review_text}</p>
+                  <div className="flex items-center gap-2 sm:gap-3 mt-2 sm:mt-3 text-xs text-muted-foreground font-bold uppercase tracking-wider flex-wrap">
+                    <span className="break-words">{review.reviewer_name}</span>
                     {review.is_verified_purchase && (
                       <span className="text-accent">{lang === 'ar' ? 'شراء موثق' : 'Verified'}</span>
                     )}
@@ -236,27 +236,27 @@ export default function ProductPageClient() {
 
         {/* Related Products */}
         {product.frequently_bought_together.length > 0 && (
-          <div className="mt-10 pb-10">
-            <h2 className="text-lg font-black text-foreground mb-4 uppercase tracking-wider border-l-4 border-primary pl-3">{t('product.relatedProducts')}</h2>
+          <div className="mt-8 sm:mt-10 pb-8 sm:pb-10">
+            <h2 className="text-base sm:text-lg font-black text-foreground mb-3 sm:mb-4 uppercase tracking-wider border-l-4 border-primary pl-3">{t('product.relatedProducts')}</h2>
             <ErrorBoundary fallback={
-              <div className="text-center py-8 card-brutal">
-                <p className="text-muted-foreground text-sm font-bold uppercase tracking-wider">Unable to load related products</p>
+              <div className="text-center py-6 sm:py-8 card-brutal">
+                <p className="text-muted-foreground text-xs sm:text-sm font-bold uppercase tracking-wider">Unable to load related products</p>
               </div>
             }>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                 {product.frequently_bought_together.map((item) => (
                   <Link
                     key={item.asin}
                     href={`/product/${item.asin}`}
                     className="card-brutal overflow-hidden hover:border-accent transition-colors"
                   >
-                    <div className="aspect-square bg-white p-3 flex items-center justify-center">
+                    <div className="aspect-square bg-white p-2 sm:p-3 flex items-center justify-center">
                       {item.image_url && <img src={item.image_url} alt={item.title} className="max-h-full max-w-full object-contain" loading="lazy" />}
                     </div>
-                    <div className="p-3 border-t-2 border-border">
-                      <h3 className="text-xs text-muted-foreground line-clamp-2 font-semibold uppercase tracking-wide">{item.title}</h3>
+                    <div className="p-2 sm:p-3 border-t-2 border-border">
+                      <h3 className="text-[10px] sm:text-xs text-muted-foreground line-clamp-2 font-semibold uppercase tracking-wide break-words">{item.title}</h3>
                       {item.price > 0 && (
-                        <p className="text-sm font-black text-foreground mt-2 text-mono">{formatPrice(item.price, lang)} <span className="text-[10px] text-muted-foreground font-bold">{t('common.sar')}</span></p>
+                        <p className="text-xs sm:text-sm font-black text-foreground mt-1 sm:mt-2 text-mono">{formatPrice(item.price, lang)} <span className="text-[10px] text-muted-foreground font-bold">{t('common.sar')}</span></p>
                       )}
                     </div>
                   </Link>
