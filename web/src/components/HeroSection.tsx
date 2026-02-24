@@ -17,37 +17,29 @@ export default function HeroSection() {
   };
 
   return (
-    <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden">
-      {/* Animated Background */}
+    <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden noise-overlay">
+      {/* Ambient Background */}
       <div className="absolute inset-0">
-        {/* Gradient Orbs */}
+        {/* Amber Glow Orbs */}
         <motion.div
           animate={{
             scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
+            opacity: [0.15, 0.25, 0.15],
           }}
           transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500 rounded-full blur-[120px]"
+          className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary rounded-full blur-[120px]"
         />
         <motion.div
           animate={{
             scale: [1.2, 1, 1.2],
-            opacity: [0.2, 0.4, 0.2],
+            opacity: [0.1, 0.2, 0.1],
           }}
           transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-          className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-purple-500 rounded-full blur-[120px]"
-        />
-        <motion.div
-          animate={{
-            scale: [1, 1.3, 1],
-            opacity: [0.25, 0.45, 0.25],
-          }}
-          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-          className="absolute top-1/2 right-1/3 w-80 h-80 bg-pink-500 rounded-full blur-[120px]"
+          className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-amber-600 rounded-full blur-[120px]"
         />
 
         {/* Grid Pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(6,182,212,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(6,182,212,0.03)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_50%,black,transparent)]" />
+        <div className="grid-pattern absolute inset-0" />
 
         {/* Noise Texture */}
         <div className="absolute inset-0 opacity-[0.015] mix-blend-overlay" style={{
@@ -65,14 +57,14 @@ export default function HeroSection() {
           className="inline-flex items-center gap-2 mb-8"
         >
           <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full blur-xl opacity-60 animate-pulse" />
-            <div className="relative bg-gradient-to-r from-cyan-500/20 to-purple-500/20 border border-cyan-500/30 rounded-full px-6 py-2.5 backdrop-blur-xl">
+            <div className="absolute inset-0 bg-primary/30 rounded-full blur-xl opacity-60 animate-glow" />
+            <div className="relative bg-primary/10 border border-primary/30 rounded-full px-6 py-2.5 backdrop-blur-xl">
               <span className="flex items-center gap-2 text-sm font-black">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                 </span>
-                <span className="bg-gradient-to-r from-cyan-300 to-purple-300 bg-clip-text text-transparent">
+                <span className="gradient-text-gold">
                   LIVE PRICE TRACKING • UPDATED DAILY
                 </span>
               </span>
@@ -88,12 +80,12 @@ export default function HeroSection() {
           className="mb-6"
         >
           <h1 className="text-6xl sm:text-7xl lg:text-8xl font-black mb-4 leading-[0.95] tracking-tight">
-            <span className="block text-white">DOMINATE</span>
-            <span className="block bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              THE GAME
+            <span className="block text-foreground">ELITE GAMING</span>
+            <span className="block gradient-text-gold">
+              BEST PRICES
             </span>
           </h1>
-          <div className="h-1 w-32 mx-auto bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 rounded-full" />
+          <div className="h-1 w-32 mx-auto bg-gradient-to-r from-primary via-amber-500 to-primary rounded-full" />
         </motion.div>
 
         {/* Subtitle */}
@@ -101,9 +93,9 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="text-gray-400 text-xl sm:text-2xl max-w-3xl mx-auto mb-12 leading-relaxed font-medium"
+          className="text-muted-foreground text-xl sm:text-2xl max-w-3xl mx-auto mb-12 leading-relaxed font-medium"
         >
-          Track prices, verify real discounts, and find the best gaming deals on Amazon.sa
+          Saudi Arabia's premier gaming tech aggregator. Track prices, verify real discounts, discover exceptional value.
         </motion.p>
 
         {/* Search Bar */}
@@ -115,26 +107,23 @@ export default function HeroSection() {
           className="max-w-3xl mx-auto mb-12"
         >
           <div className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 rounded-2xl opacity-0 group-hover:opacity-30 blur-xl transition-opacity duration-500" />
-            <div className="relative flex items-center bg-gradient-to-r from-[#1a1a24] to-[#12121a] border border-white/10 group-hover:border-cyan-500/30 rounded-2xl overflow-hidden transition-all">
+            <div className="absolute -inset-1 bg-primary/20 rounded-2xl opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500" />
+            <div className="relative flex items-center bg-card border border-border group-hover:border-primary/30 rounded-2xl overflow-hidden transition-all">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search for RTX 4090, Gaming Keyboard, or any product..."
-                className="flex-1 bg-transparent px-6 py-5 text-white placeholder-gray-500 focus:outline-none text-lg"
+                className="flex-1 bg-transparent px-6 py-5 text-foreground placeholder-muted-foreground focus:outline-none text-lg"
               />
               <button
                 type="submit"
-                className="relative group/btn m-2"
+                className="btn-primary m-2"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-xl blur-lg opacity-50 group-hover/btn:opacity-75 transition-opacity" />
-                <div className="relative bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-400 hover:to-purple-400 text-white font-black px-8 py-3 rounded-xl transition-all flex items-center gap-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  <span>Search</span>
-                </div>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <span>Search</span>
               </button>
             </div>
           </div>
@@ -147,23 +136,19 @@ export default function HeroSection() {
           transition={{ duration: 0.8, delay: 0.8 }}
           className="flex gap-4 justify-center flex-wrap mb-16"
         >
-          <Link href="/deals" className="group relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-2xl blur-xl opacity-50 group-hover:opacity-75 transition-opacity" />
-            <div className="relative bg-gradient-to-r from-cyan-500 to-purple-500 rounded-2xl px-10 py-4 font-black text-white flex items-center gap-2 hover:scale-105 transition-transform">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-              <span>Browse Deals</span>
-            </div>
+          <Link href="/deals" className="btn-primary">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+            <span>Browse Deals</span>
+          </Link>
           </Link>
 
-          <Link href="/categories" className="group relative">
-            <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 rounded-2xl px-10 py-4 font-black text-white hover:bg-white/10 hover:scale-105 transition-all flex items-center gap-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-              </svg>
-              <span>All Categories</span>
-            </div>
+          <Link href="/categories" className="btn-secondary">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+            <span>All Categories</span>
           </Link>
         </motion.div>
 
@@ -177,7 +162,7 @@ export default function HeroSection() {
           {[
             { value: '1000+', label: 'Products Tracked' },
             { value: '24/7', label: 'Price Monitoring' },
-            { value: '100%', label: 'Free Forever' },
+            { value: '100%', label: 'Verified Deals' },
           ].map((stat, i) => (
             <motion.div
               key={stat.label}
@@ -187,12 +172,12 @@ export default function HeroSection() {
               className="text-center"
             >
               <div className="relative inline-block mb-2">
-                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-2xl blur-xl opacity-40" />
-                <p className="relative text-4xl sm:text-5xl font-black bg-gradient-to-r from-cyan-300 via-purple-300 to-pink-300 bg-clip-text text-transparent">
+                <div className="absolute inset-0 bg-primary/20 rounded-2xl blur-xl opacity-40" />
+                <p className="relative text-4xl sm:text-5xl font-black gradient-text-gold">
                   {stat.value}
                 </p>
               </div>
-              <p className="text-sm text-gray-500 font-medium uppercase tracking-wider">{stat.label}</p>
+              <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider">{stat.label}</p>
             </motion.div>
           ))}
         </motion.div>
