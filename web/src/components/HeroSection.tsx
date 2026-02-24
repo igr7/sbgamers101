@@ -47,7 +47,7 @@ export default function HeroSection() {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="mb-8"
         >
-          <h1 className="text-display text-6xl sm:text-7xl lg:text-8xl mb-4">
+          <h1 className="text-display text-4xl sm:text-6xl md:text-7xl lg:text-8xl mb-4">
             <span className="block">GAMING</span>
             <span className="block">TECH</span>
             <span className="block text-accent">DEALS</span>
@@ -60,7 +60,7 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-muted-foreground text-lg sm:text-xl max-w-2xl mx-auto mb-12 font-semibold uppercase tracking-wide"
+          className="text-muted-foreground text-sm sm:text-lg md:text-xl max-w-2xl mx-auto mb-12 font-semibold uppercase tracking-wide px-4"
         >
           Saudi Arabia's Premier Gaming Tech Aggregator
         </motion.p>
@@ -71,19 +71,19 @@ export default function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
           onSubmit={handleSearch}
-          className="max-w-3xl mx-auto mb-12"
+          className="max-w-3xl mx-auto mb-12 px-4"
         >
-          <div className="relative flex items-center border-2 border-border hover:border-primary transition-sharp">
+          <div className="relative flex flex-col sm:flex-row items-stretch sm:items-center border-2 border-border hover:border-primary transition-sharp">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="SEARCH FOR RTX 4090, GAMING KEYBOARD..."
-              className="flex-1 bg-card px-6 py-5 text-foreground placeholder-muted-foreground focus:outline-none text-base font-semibold uppercase tracking-wide"
+              placeholder="SEARCH RTX 4090..."
+              className="flex-1 bg-card px-4 sm:px-6 py-4 sm:py-5 text-foreground placeholder-muted-foreground focus:outline-none text-sm sm:text-base font-semibold uppercase tracking-wide"
             />
             <button
               type="submit"
-              className="btn-primary m-2"
+              className="btn-primary m-2 justify-center"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="square" strokeLinejoin="miter" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -98,7 +98,7 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="flex gap-4 justify-center flex-wrap mb-16"
+          className="flex gap-4 justify-center flex-wrap mb-16 px-4"
         >
           <Link href="/deals" className="btn-primary">
             <span>Browse Deals</span>
@@ -120,7 +120,7 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.5 }}
-          className="grid grid-cols-3 gap-8 max-w-3xl mx-auto"
+          className="grid grid-cols-3 gap-3 sm:gap-8 max-w-3xl mx-auto px-4"
         >
           {[
             { value: '1000+', label: 'Products' },
@@ -132,12 +132,12 @@ export default function HeroSection() {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ duration: 0.3, delay: 0.6 + i * 0.1 }}
-              className="text-center border-2 border-border p-6 hover:border-primary transition-sharp"
+              className="text-center border-2 border-border p-3 sm:p-6 hover:border-primary transition-sharp"
             >
-              <div className="stat-display mb-2">
+              <div className="stat-display mb-2 text-2xl sm:text-3xl md:text-4xl">
                 {stat.value}
               </div>
-              <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">
+              <p className="text-[10px] sm:text-xs text-muted-foreground font-bold uppercase tracking-widest">
                 {stat.label}
               </p>
             </motion.div>

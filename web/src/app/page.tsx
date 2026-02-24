@@ -3,11 +3,11 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { api, Category, Product } from '@/lib/api';
-import { getCategoryEmoji } from '@/lib/utils';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import HeroSection from '@/components/HeroSection';
 import ProductCard from '@/components/ProductCard';
+import CategoryIcon from '@/components/CategoryIcon';
 import Link from 'next/link';
 
 export default function HomePage() {
@@ -61,9 +61,11 @@ export default function HomePage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.3, delay: i * 0.05 }}
               >
-                <Link href={`/category/${cat.slug}`} className="block card-brutal p-6 text-center group">
-                  <div className="text-5xl mb-3">{getCategoryEmoji(cat.slug)}</div>
-                  <h3 className="text-sm font-bold uppercase tracking-wide group-hover:text-primary transition-colors">
+                <Link href={`/category/${cat.slug}`} className="block card-brutal p-4 sm:p-6 text-center group">
+                  <div className="mb-3 flex justify-center">
+                    <CategoryIcon slug={cat.slug} className="w-10 h-10 sm:w-12 sm:h-12 text-foreground group-hover:text-primary transition-colors" />
+                  </div>
+                  <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wide group-hover:text-primary transition-colors">
                     {cat.name}
                   </h3>
                 </Link>

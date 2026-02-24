@@ -9,7 +9,7 @@ import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 import FilterSidebar, { Filters } from '@/components/FilterSidebar';
 import { ErrorBoundary, ProductGridErrorFallback } from '@/components/ErrorBoundary';
-import { getCategoryEmoji } from '@/lib/utils';
+import CategoryIcon from '@/components/CategoryIcon';
 
 export default function CategoryPageClient() {
   const { slug } = useParams<{ slug: string }>();
@@ -83,14 +83,14 @@ export default function CategoryPageClient() {
         </div>
 
         {/* Header */}
-        <div className="mb-8 border-l-4 border-primary pl-6">
-          <div className="flex items-center gap-4 mb-2">
-            <span className="text-5xl">{getCategoryEmoji(slug)}</span>
-            <h1 className="text-4xl font-black uppercase tracking-tight">
+        <div className="mb-8 border-l-4 border-primary pl-4 sm:pl-6">
+          <div className="flex items-center gap-3 sm:gap-4 mb-2">
+            <CategoryIcon slug={slug} className="w-10 h-10 sm:w-12 sm:h-12 text-primary" />
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight">
               {categoryName || slug}
             </h1>
           </div>
-          <p className="text-muted-foreground text-sm font-semibold uppercase tracking-wide">
+          <p className="text-muted-foreground text-xs sm:text-sm font-semibold uppercase tracking-wide">
             {filteredProducts.length} Products Available
           </p>
         </div>

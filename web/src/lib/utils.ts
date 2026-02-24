@@ -60,21 +60,8 @@ export function formatPrice(price: number, lang: string = 'en'): string {
   return Math.round(price).toLocaleString(lang === 'ar' ? 'ar-SA' : 'en-US');
 }
 
-// Category emoji mapping
-export function getCategoryEmoji(slug: string): string {
-  const emojiMap: Record<string, string> = {
-    gpu: '🎮',
-    cpu: '⚡',
-    monitor: '🖥️',
-    keyboard: '⌨️',
-    mouse: '🖱️',
-    headset: '🎧',
-    ram: '💾',
-    ssd: '💿',
-    motherboard: '🔌',
-    psu: '🔋',
-    case: '📦',
-    cooling: '❄️',
-  };
-  return emojiMap[slug] || '🎮';
+// Category slug validation
+export function isValidCategorySlug(slug: string): boolean {
+  const validSlugs = ['gpu', 'cpu', 'monitor', 'keyboard', 'mouse', 'headset', 'ram', 'ssd', 'motherboard', 'psu', 'case', 'cooling'];
+  return validSlugs.includes(slug);
 }
