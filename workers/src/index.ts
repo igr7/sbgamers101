@@ -12,89 +12,50 @@ const CATEGORIES = {
   headset: { name_en: 'Headsets', name_ar: 'سماعات الرأس' },
 };
 
-// Mock product data for testing
-const MOCK_PRODUCTS = [
-  {
-    asin: 'B0BQWK9PC3',
-    title: 'NVIDIA GeForce RTX 4090 24GB GDDR6X Graphics Card',
-    main_image: 'https://m.media-amazon.com/images/I/81SvQG+HPUL._AC_SL1500_.jpg',
-    price: 7999,
-    original_price: 8999,
-    discount_percentage: 11,
-    rating: 4.8,
-    ratings_count: 1247,
-    is_prime: true,
-    is_best_seller: true,
-    is_amazon_choice: false,
-    currency: 'SAR',
-    amazon_url: 'https://www.amazon.sa/dp/B0BQWK9PC3',
-  },
-  {
-    asin: 'B0BQWK8PC2',
-    title: 'AMD Radeon RX 7900 XTX 24GB GDDR6 Gaming Graphics Card',
-    main_image: 'https://m.media-amazon.com/images/I/71kZGFKql9L._AC_SL1500_.jpg',
-    price: 4499,
-    original_price: 4999,
-    discount_percentage: 10,
-    rating: 4.6,
-    ratings_count: 892,
-    is_prime: true,
-    is_best_seller: false,
-    is_amazon_choice: true,
-    currency: 'SAR',
-    amazon_url: 'https://www.amazon.sa/dp/B0BQWK8PC2',
-  },
-  {
-    asin: 'B0BQWK7PC1',
-    title: 'NVIDIA GeForce RTX 4080 16GB GDDR6X Graphics Card',
-    main_image: 'https://m.media-amazon.com/images/I/81kZGFKql9L._AC_SL1500_.jpg',
-    price: 5499,
-    original_price: 5999,
-    discount_percentage: 8,
-    rating: 4.7,
-    ratings_count: 654,
-    is_prime: true,
-    is_best_seller: false,
-    is_amazon_choice: false,
-    currency: 'SAR',
-    amazon_url: 'https://www.amazon.sa/dp/B0BQWK7PC1',
-  },
-];
-
 async function callDecodoAPI(query: string, apiKey: string): Promise<any> {
-  // Temporary mock response while API credentials are being fixed
-  console.log('Using mock data - Decodo API credentials need to be updated');
+  if (!apiKey) {
+    throw new Error('DECODO_API_KEY not set');
+  }
 
-  return {
-    results: [{
-      content: {
-        results: {
-          results: {
-            organic: MOCK_PRODUCTS
-          }
-        }
-      }
-    }]
-  };
+  const response = await fetch('https://realtime.oxylabs.io/v1/queries', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Basic ${apiKey}`,
+    },
+    body: JSON.stringify({
+      source: 'amazon_search',
+      domain: 'sa',
+      query: query,
+      parse: true,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Decodo API error: ${response.status} - ${errorText}`);
+  }
+
+  return response.json();
 }
 
 function mapProduct(item: any) {
   return {
     asin: item.asin || '',
     title: item.title || '',
-    main_image: item.main_image || item.url_image || item.image || '',
+    main_image: item.url_image || item.image || '',
     price: item.price || null,
-    original_price: item.original_price || item.price_strikethrough || null,
-    discount_percentage: item.discount_percentage || (item.price_strikethrough && item.price
+    original_price: item.price_strikethrough || null,
+    discount_percentage: item.price_strikethrough && item.price
       ? Math.round(((item.price_strikethrough - item.price) / item.price_strikethrough) * 100)
-      : null),
+      : null,
     rating: item.rating || null,
-    ratings_count: item.ratings_count || item.ratings_total || null,
+    ratings_count: item.ratings_total || null,
     is_prime: item.is_prime || false,
     is_best_seller: item.is_best_seller || false,
     is_amazon_choice: item.is_amazon_choice || false,
-    currency: item.currency || 'SAR',
-    amazon_url: item.amazon_url || item.url || `https://www.amazon.sa/dp/${item.asin}`,
+    currency: 'SAR',
+    amazon_url: item.url || `https://www.amazon.sa/dp/${item.asin}`,
   };
 }
 
@@ -102,7 +63,6 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   const path = url.pathname;
 
-  // CORS headers
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -114,20 +74,16 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
   }
 
   try {
-    // Health endpoint
     if (path === '/api/v1/health') {
       return new Response(JSON.stringify({
         success: true,
         status: 'healthy',
-        mode: 'mock_data',
-        message: 'Using mock data - Decodo API credentials need update',
         timestamp: new Date().toISOString(),
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Categories endpoint
     if (path === '/api/v1/categories') {
       const categories = Object.entries(CATEGORIES).map(([slug, data], index) => ({
         id: String(index + 1),
@@ -144,9 +100,16 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       });
     }
 
-    // Deals endpoint
     if (path === '/api/v1/deals') {
       const limit = parseInt(url.searchParams.get('limit') || '20');
+      const cacheKey = `deals:gpu:${limit}`;
+
+      const cached = await env.CACHE.get(cacheKey);
+      if (cached) {
+        return new Response(cached, {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
 
       const result = await callDecodoAPI('Graphics Cards', env.DECODO_API_KEY);
       const products = (result.results?.[0]?.content?.results?.results?.organic || [])
@@ -163,16 +126,17 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
           deals: products.map(p => ({ ...p, category_slug: 'gpu', category_name: 'Graphics Cards' })),
         },
         cached: false,
-        source: 'mock_data',
-        message: 'Using mock data - Update Decodo API credentials for real data',
+        source: 'decodo_api',
       };
 
-      return new Response(JSON.stringify(response), {
+      const responseStr = JSON.stringify(response);
+      await env.CACHE.put(cacheKey, responseStr, { expirationTtl: 900 });
+
+      return new Response(responseStr, {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Category endpoint
     const categoryMatch = path.match(/^\/api\/v1\/category\/([^\/]+)$/);
     if (categoryMatch) {
       const slug = categoryMatch[1];
@@ -189,6 +153,14 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       }
 
       const limit = parseInt(url.searchParams.get('limit') || '50');
+      const cacheKey = `category:${slug}:${limit}`;
+
+      const cached = await env.CACHE.get(cacheKey);
+      if (cached) {
+        return new Response(cached, {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
 
       const result = await callDecodoAPI(category.name_en, env.DECODO_API_KEY);
       const products = (result.results?.[0]?.content?.results?.results?.organic || [])
@@ -207,11 +179,13 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
           products,
         },
         cached: false,
-        source: 'mock_data',
-        message: 'Using mock data - Update Decodo API credentials for real data',
+        source: 'decodo_api',
       };
 
-      return new Response(JSON.stringify(response), {
+      const responseStr = JSON.stringify(response);
+      await env.CACHE.put(cacheKey, responseStr, { expirationTtl: 1800 });
+
+      return new Response(responseStr, {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
