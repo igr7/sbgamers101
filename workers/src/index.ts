@@ -12,45 +12,44 @@ const CATEGORIES = {
   headset: { name_en: 'Headsets', name_ar: 'سماعات الرأس' },
 };
 
-async function callAmazonAPI(query: string, apiKey: string): Promise<any> {
-  if (!apiKey) {
-    throw new Error('RAPIDAPI_KEY not set');
-  }
-
+async function searchAmazonSA(query: string, apiKey: string): Promise<any> {
   const response = await fetch(
-    `https://real-time-amazon-data.p.rapidapi.com/search?query=${encodeURIComponent(query)}&page=1&country=SA&sort_by=RELEVANCE&product_condition=ALL`,
+    `https://scout-amazon-data.p.rapidapi.com/Amazon-Search-Data?query=${encodeURIComponent(query)}&region=SA`,
     {
       method: 'GET',
       headers: {
         'x-rapidapi-key': apiKey,
-        'x-rapidapi-host': 'real-time-amazon-data.p.rapidapi.com',
+        'x-rapidapi-host': 'scout-amazon-data.p.rapidapi.com',
       },
     }
   );
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Amazon API error: ${response.status} - ${errorText}`);
+    throw new Error(`Amazon API error: ${response.status}`);
   }
 
   return response.json();
 }
 
 function mapAmazonProduct(item: any) {
+  const price = item.product_price ? parseFloat(item.product_price.replace(/[^0-9.]/g, '')) : null;
+  const originalPrice = item.product_original_price ? parseFloat(item.product_original_price.replace(/[^0-9.]/g, '')) : null;
+
   return {
     asin: item.asin || '',
     title: item.product_title || '',
-    main_image: item.product_photo || '',
-    price: item.product_price ? parseFloat(item.product_price.replace(/[^0-9.]/g, '')) : null,
-    original_price: item.product_original_price ? parseFloat(item.product_original_price.replace(/[^0-9.]/g, '')) : null,
-    discount_percentage: item.sales_volume ? parseInt(item.sales_volume.replace(/[^0-9]/g, '')) : null,
+    main_image: item.product_image || '',
+    price: price,
+    original_price: originalPrice || price,
+    discount_percentage: originalPrice && price ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0,
     rating: item.product_star_rating ? parseFloat(item.product_star_rating) : null,
-    ratings_count: item.product_num_ratings || null,
+    ratings_count: item.product_num_ratings || 0,
     is_prime: item.is_prime || false,
-    is_best_seller: item.is_best_seller || false,
-    is_amazon_choice: item.is_amazon_choice || false,
+    is_best_seller: false,
+    is_amazon_choice: false,
     currency: 'SAR',
-    amazon_url: item.product_url || `https://www.amazon.sa/dp/${item.asin}`,
+    amazon_url: `https://www.amazon.sa/dp/${item.asin}`,
+    source: 'amazon_sa',
   };
 }
 
@@ -73,7 +72,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       return new Response(JSON.stringify({
         success: true,
         status: 'healthy',
-        api: 'rapidapi',
+        apis: ['amazon_sa', 'newegg_sa'],
         timestamp: new Date().toISOString(),
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -107,9 +106,10 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         });
       }
 
-      const result = await callAmazonAPI('Graphics Cards', env.RAPIDAPI_KEY);
-      const products = (result.data?.products || [])
+      const result = await searchAmazonSA('Graphics Cards', env.RAPIDAPI_KEY);
+      const products = (result.products || [])
         .map(mapAmazonProduct)
+        .filter((p: any) => p.price && p.price > 0)
         .slice(0, limit);
 
       const response = {
@@ -122,7 +122,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
           deals: products.map(p => ({ ...p, category_slug: 'gpu', category_name: 'Graphics Cards' })),
         },
         cached: false,
-        source: 'rapidapi_amazon',
+        source: 'amazon_sa',
       };
 
       const responseStr = JSON.stringify(response);
@@ -158,9 +158,10 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         });
       }
 
-      const result = await callAmazonAPI(category.name_en, env.RAPIDAPI_KEY);
-      const products = (result.data?.products || [])
+      const result = await searchAmazonSA(category.name_en, env.RAPIDAPI_KEY);
+      const products = (result.products || [])
         .map(mapAmazonProduct)
+        .filter((p: any) => p.price && p.price > 0)
         .slice(0, limit);
 
       const response = {
@@ -175,7 +176,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
           products,
         },
         cached: false,
-        source: 'rapidapi_amazon',
+        source: 'amazon_sa',
       };
 
       const responseStr = JSON.stringify(response);
