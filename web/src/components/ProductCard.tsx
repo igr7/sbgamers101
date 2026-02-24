@@ -1,95 +1,160 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { Product } from '@/lib/api';
-import { useI18n } from '@/lib/i18n';
-import { formatPrice } from '@/lib/utils';
-
-const AFFILIATE_TAG = 'sbgamers-21';
-
-function getAffiliateUrl(amazonUrl: string): string {
-  try {
-    const url = new URL(amazonUrl);
-    url.searchParams.set('tag', AFFILIATE_TAG);
-    return url.toString();
-  } catch {
-    return amazonUrl;
-  }
-}
-
-function StarRating({ rating, count }: { rating: number; count: number }) {
-  return (
-    <div className="flex items-center gap-1">
-      <div className="flex">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <svg
-            key={star}
-            className={`w-3.5 h-3.5 ${star <= Math.round(rating) ? 'text-amber-400' : 'text-gray-700'}`}
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-          </svg>
-        ))}
-      </div>
-      {count > 0 && <span className="text-xs text-gray-500">({count.toLocaleString()})</span>}
-    </div>
-  );
-}
+import { calculateValueScore, getValueBadge, analyzePriceHistory, formatPrice, type PriceHistoryEntry } from '@/lib/utils';
 
 export default function ProductCard({ product }: { product: Product }) {
-  const { lang, t } = useI18n();
+  const [priceHistory, setPriceHistory] = useState<PriceHistoryEntry[]>([]);
+  const [imageError, setImageError] = useState(false);
+
+  // Fetch price history
+  useEffect(() => {
+    fetch(`https://sbgamers-api.ghmeshal7.workers.dev/api/v1/price-history/${product.asin}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data.history) {
+          setPriceHistory(data.data.history.map((h: any) => ({
+            price: h.price,
+            timestamp: h.timestamp
+          })));
+        }
+      })
+      .catch(() => {});
+  }, [product.asin]);
+
+  // Calculate value score
+  const valueScore = calculateValueScore(
+    product.current_price,
+    product.original_price,
+    product.rating,
+    product.discount_pct
+  );
+  const valueBadge = getValueBadge(valueScore);
+
+  // Analyze price trend
+  const priceTrend = analyzePriceHistory(product.current_price, priceHistory);
+
   const hasDiscount = product.discount_pct > 0 && product.original_price > product.current_price;
 
   return (
-    <div className="group bg-[#111118] border border-white/[0.06] rounded-xl overflow-hidden hover:border-emerald-500/20 transition-all duration-200 flex flex-col">
-      {/* Image */}
-      <Link href={`/product/${product.asin}`} className="block relative">
-        <div className="relative aspect-square bg-white/[0.02] p-4 flex items-center justify-center">
-          {hasDiscount && (
-            <span className="absolute top-2 start-2 z-10 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded">
-              -{product.discount_pct}%
-            </span>
-          )}
-          {product.image_url ? (
-            <img
-              src={product.image_url}
-              alt={product.title}
-              className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
-              loading="lazy"
-            />
-          ) : (
-            <div className="text-4xl opacity-20">📦</div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="card-premium group"
+    >
+      <Link href={`/product/${product.asin}`} className="block">
+        {/* Image Container */}
+        <div className="relative aspect-square bg-secondary/30 overflow-hidden">
+          <img
+            src={imageError ? '/placeholder-product.png' : product.image_url}
+            alt={product.title}
+            className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500"
+            loading="lazy"
+            onError={() => setImageError(true)}
+          />
+
+          {/* Badges Overlay */}
+          <div className="absolute top-3 left-3 right-3 flex items-start justify-between gap-2 z-10">
+            <div className="flex flex-col gap-2">
+              {valueBadge && (
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className={valueBadge.className}
+                >
+                  <span>{valueBadge.icon}</span>
+                  <span>{valueBadge.label}</span>
+                </motion.div>
+              )}
+
+              {hasDiscount && (
+                <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-red-500 text-white shadow-lg shadow-red-500/20">
+                  <span>-{product.discount_pct}%</span>
+                </div>
+              )}
+            </div>
+
+            {product.is_prime && (
+              <div className="px-2 py-1 rounded-md text-xs font-bold bg-primary/10 text-primary border border-primary/20">
+                Prime
+              </div>
+            )}
+          </div>
+
+          {/* Price Trend Indicator */}
+          {priceHistory.length > 0 && (
+            <div className="absolute bottom-3 right-3">
+              <div className={`${priceTrend.className} px-2 py-1 rounded-md text-xs font-bold bg-black/60 backdrop-blur-sm`}>
+                <span>{priceTrend.icon}</span>
+                <span>{priceTrend.percentageChange.toFixed(1)}%</span>
+              </div>
+            </div>
           )}
         </div>
-      </Link>
 
-      {/* Info */}
-      <div className="p-3 flex flex-col flex-1 gap-1.5">
-        <Link href={`/product/${product.asin}`}>
-          <h3 className="text-sm text-gray-300 line-clamp-2 leading-snug hover:text-white transition-colors">
+        {/* Content */}
+        <div className="p-4 space-y-3">
+          {/* Category */}
+          {product.category_name && (
+            <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+              {product.category_name}
+            </div>
+          )}
+
+          {/* Title */}
+          <h3 className="text-sm font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors min-h-[2.5rem]">
             {product.title}
           </h3>
-        </Link>
 
-        {product.rating > 0 && (
-          <StarRating rating={product.rating} count={product.ratings_total} />
-        )}
+          {/* Rating */}
+          {product.rating > 0 && (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <svg
+                    key={i}
+                    className={`w-3.5 h-3.5 ${
+                      i < Math.floor(product.rating)
+                        ? 'text-primary fill-primary'
+                        : 'text-border fill-border'
+                    }`}
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                  </svg>
+                ))}
+              </div>
+              <span className="text-xs text-muted-foreground">
+                ({product.ratings_total.toLocaleString()})
+              </span>
+            </div>
+          )}
 
-        <div className="mt-auto pt-2">
-          <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="text-lg font-bold text-white">
-              {formatPrice(product.current_price, lang)}
-              <span className="text-[10px] font-normal text-gray-500 ms-1">{t('common.sar')}</span>
+          {/* Price */}
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-black text-primary">
+              {formatPrice(product.current_price)}
             </span>
             {hasDiscount && (
-              <span className="text-xs text-gray-600 line-through">
-                {formatPrice(product.original_price, lang)}
+              <span className="text-sm text-muted-foreground line-through">
+                {formatPrice(product.original_price)}
               </span>
             )}
           </div>
+
+          {/* Value Score */}
+          {valueScore > 0 && (
+            <div className="text-xs text-muted-foreground">
+              Value Score: <span className="text-primary font-bold">{valueScore}</span>
+            </div>
+          )}
         </div>
-      </div>
-    </div>
+      </Link>
+    </motion.div>
   );
 }

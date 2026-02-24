@@ -1,20 +1,134 @@
-export function formatPrice(price: number, lang: 'en' | 'ar' = 'en'): string {
-  return price.toLocaleString(lang === 'ar' ? 'ar-SA' : 'en-SA', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  });
+// Value Score Calculation System
+export function calculateValueScore(
+  price: number,
+  originalPrice: number,
+  rating: number,
+  discountPercentage: number
+): number {
+  if (!price || price <= 0) return 0;
+  if (!rating || rating <= 0) return 0;
+
+  // Formula: (Rating × Discount%) / (Price / 1000)
+  // Normalize price to thousands for better scoring
+  const normalizedPrice = price / 1000;
+  const effectiveDiscount = discountPercentage > 0 ? discountPercentage : 1;
+
+  const score = (rating * effectiveDiscount) / normalizedPrice;
+  return Math.round(score * 10) / 10;
 }
 
-export function analyzeDeal(
+export function getValueBadge(score: number): {
+  label: string;
+  className: string;
+  icon: string;
+} | null {
+  if (score >= 50) {
+    return {
+      label: 'Excellent Deal',
+      className: 'badge-excellent',
+      icon: '⭐'
+    };
+  }
+  if (score >= 25) {
+    return {
+      label: 'Good Value',
+      className: 'badge-good',
+      icon: '✓'
+    };
+  }
+  if (score >= 10) {
+    return {
+      label: 'Fair Price',
+      className: 'badge-fair',
+      icon: '○'
+    };
+  }
+  return null;
+}
+
+// Price History Analysis
+export interface PriceHistoryEntry {
+  price: number;
+  timestamp: number;
+}
+
+export function analyzePriceHistory(
   currentPrice: number,
-  originalPrice: number,
-  history: { price: number; recorded_at: string }[]
-): 'real' | 'fake' | 'unknown' {
-  if (history.length < 3) return 'unknown';
-  const higherPriceCount = history.filter((h) => h.price > currentPrice * 1.05).length;
-  const ratio = higherPriceCount / history.length;
-  if (ratio >= 0.3) return 'real';
-  return 'fake';
+  history: PriceHistoryEntry[]
+): {
+  trend: 'down' | 'up' | 'stable';
+  percentageChange: number;
+  icon: string;
+  className: string;
+} {
+  if (!history || history.length < 2) {
+    return {
+      trend: 'stable',
+      percentageChange: 0,
+      icon: '→',
+      className: 'price-stable'
+    };
+  }
+
+  // Compare current price with average of last 7 days
+  const recentPrices = history.slice(0, 7).map(h => h.price);
+  const avgPrice = recentPrices.reduce((a, b) => a + b, 0) / recentPrices.length;
+
+  const change = ((currentPrice - avgPrice) / avgPrice) * 100;
+
+  if (change < -5) {
+    return {
+      trend: 'down',
+      percentageChange: Math.abs(change),
+      icon: '↓',
+      className: 'price-down'
+    };
+  }
+
+  if (change > 5) {
+    return {
+      trend: 'up',
+      percentageChange: change,
+      icon: '↑',
+      className: 'price-up'
+    };
+  }
+
+  return {
+    trend: 'stable',
+    percentageChange: Math.abs(change),
+    icon: '→',
+    className: 'price-stable'
+  };
+}
+
+// Format price for display
+export function formatPrice(price: number, currency: string = 'SAR'): string {
+  return new Intl.NumberFormat('en-SA', {
+    style: 'currency',
+    currency: currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(price);
+}
+
+// Category utilities
+export function getCategoryEmoji(slug: string): string {
+  const emojis: Record<string, string> = {
+    cpu: '💻',
+    gpu: '🎮',
+    ram: '🪸',
+    ssd: '💾',
+    motherboard: '📡',
+    psu: '⚡',
+    case: '📦',
+    cooling: '❄️',
+    mouse: '🖱️',
+    keyboard: '⌨️',
+    headset: '🎧',
+    monitor: '🖥️',
+  };
+  return emojis[slug] || '🎮';
 }
 
 export const CATEGORY_ICONS: Record<string, string> = {
@@ -32,20 +146,7 @@ export const CATEGORY_ICONS: Record<string, string> = {
   monitor: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
 };
 
-export function getCategoryEmoji(slug: string): string {
-  const emojis: Record<string, string> = {
-    cpu: '💻',
-    gpu: '🎮',
-    ram: '🪸',
-    ssd: '💾',
-    motherboard: '📡',
-    psu: '⚡',
-    case: '📦',
-    cooling: '❄️',
-    mouse: '🖱️',
-    keyboard: '⌨️',
-    headset: '🎧',
-    monitor: '🖥️',
-  };
-  return emojis[slug] || '🎮';
+// Utility function for cn (classnames)
+export function cn(...classes: (string | undefined | null | false)[]): string {
+  return classes.filter(Boolean).join(' ');
 }
