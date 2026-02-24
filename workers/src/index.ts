@@ -1,6 +1,7 @@
 interface Env {
   CACHE: KVNamespace;
   RAPIDAPI_KEY: string;
+  DB: D1Database;
 }
 
 const CATEGORIES = {
@@ -83,6 +84,28 @@ function isGamingProduct(title: string): boolean {
   }
 
   return false;
+}
+
+async function savePriceHistory(env: Env, asin: string, price: number, originalPrice: number, title: string) {
+  try {
+    // Save or update product
+    await env.DB.prepare(
+      'INSERT OR REPLACE INTO products (asin, title, last_updated, first_seen) VALUES (?, ?, ?, COALESCE((SELECT first_seen FROM products WHERE asin = ?), ?))'
+    ).bind(asin, title, Date.now(), asin, Date.now()).run();
+
+    // Save price history
+    await env.DB.prepare(
+      'INSERT INTO price_history (asin, price, original_price, discount_percentage, timestamp) VALUES (?, ?, ?, ?, ?)'
+    ).bind(
+      asin,
+      price,
+      originalPrice || price,
+      originalPrice && price ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0,
+      Date.now()
+    ).run();
+  } catch (error) {
+    console.error('Error saving price history:', error);
+  }
 }
 
 function mapAmazonProduct(item: any) {
@@ -269,16 +292,25 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       const price = productData.product_price ? parseFloat(productData.product_price.replace(/[^0-9.]/g, '')) : null;
       const originalPrice = productData.product_original_price ? parseFloat(productData.product_original_price.replace(/[^0-9.]/g, '')) : null;
 
+      // Save price history
+      if (price) {
+        await savePriceHistory(env, asin, price, originalPrice || price, productData.product_title);
+      }
+
       const product = {
         asin: productData.asin || asin,
         title: productData.product_title || '',
-        description: productData.product_description || productData.about_product || '',
+        description: productData.product_description || '',
         main_image: productData.product_image || productData.product_photo || '',
+        image_url: productData.product_image || productData.product_photo || '',
         images: productData.product_photos || [productData.product_image],
+        current_price: price || 0,
         price: price,
         original_price: originalPrice || price,
+        discount_pct: originalPrice && price ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0,
         discount_percentage: originalPrice && price ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0,
-        rating: productData.product_star_rating ? parseFloat(productData.product_star_rating) : null,
+        rating: productData.product_star_rating ? parseFloat(productData.product_star_rating) : 0,
+        ratings_total: productData.product_num_ratings || 0,
         ratings_count: productData.product_num_ratings || 0,
         reviews_count: productData.product_num_reviews || 0,
         is_prime: productData.is_prime || false,
@@ -286,8 +318,14 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         is_amazon_choice: productData.is_amazon_choice || false,
         currency: 'SAR',
         amazon_url: `https://www.amazon.sa/dp/${asin}`,
+        availability: productData.delivery_info || 'In Stock',
+        brand: '',
+        category_name: '',
+        key_features: [],
         specifications: productData.product_details || {},
         features: productData.product_features || [],
+        top_reviews: [],
+        frequently_bought_together: [],
         source: 'amazon_sa',
       };
 
@@ -295,6 +333,38 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         success: true,
         data: product,
         cached: false,
+      };
+
+      const responseStr = JSON.stringify(response);
+      await env.CACHE.put(cacheKey, responseStr, { expirationTtl: 3600 });
+
+      return new Response(responseStr, {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const priceHistoryMatch = path.match(/^\/api\/v1\/price-history\/([^\/]+)$/);
+    if (priceHistoryMatch) {
+      const asin = priceHistoryMatch[1];
+      const cacheKey = `price-history:${asin}`;
+
+      const cached = await env.CACHE.get(cacheKey);
+      if (cached) {
+        return new Response(cached, {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const history = await env.DB.prepare(
+        'SELECT price, original_price, discount_percentage, timestamp FROM price_history WHERE asin = ? ORDER BY timestamp DESC LIMIT 30'
+      ).bind(asin).all();
+
+      const response = {
+        success: true,
+        data: {
+          asin,
+          history: history.results || [],
+        },
       };
 
       const responseStr = JSON.stringify(response);
@@ -328,5 +398,47 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     return handleRequest(request, env);
+  },
+  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+    // Daily price update job - runs at 2 AM
+    console.log('Running daily price update job');
+
+    try {
+      // Get all tracked products
+      const products = await env.DB.prepare(
+        'SELECT DISTINCT asin, title FROM products ORDER BY last_updated ASC LIMIT 100'
+      ).all();
+
+      if (!products.results || products.results.length === 0) {
+        console.log('No products to update');
+        return;
+      }
+
+      // Update prices for each product
+      for (const product of products.results) {
+        try {
+          const productData = await getProductDetails(product.asin as string, env.RAPIDAPI_KEY);
+
+          if (productData && productData.product_price) {
+            const price = parseFloat(productData.product_price.replace(/[^0-9.]/g, ''));
+            const originalPrice = productData.product_original_price
+              ? parseFloat(productData.product_original_price.replace(/[^0-9.]/g, ''))
+              : price;
+
+            await savePriceHistory(env, product.asin as string, price, originalPrice, productData.product_title);
+            console.log(`Updated price for ${product.asin}: ${price} SAR`);
+          }
+
+          // Small delay to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (error) {
+          console.error(`Error updating ${product.asin}:`, error);
+        }
+      }
+
+      console.log(`Daily price update completed: ${products.results.length} products updated`);
+    } catch (error) {
+      console.error('Error in daily price update job:', error);
+    }
   },
 };
