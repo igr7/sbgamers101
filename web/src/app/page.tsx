@@ -99,8 +99,8 @@ export default function HomePage() {
               className="hidden sm:flex items-center gap-2 text-sm font-bold uppercase tracking-wide hover:text-primary transition-colors"
             >
               <span>View All</span>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="square" strokeLinejoin="miter" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                <path strokeLinecap="square" strokeLinejoin="miter" d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
             </Link>
           </motion.div>

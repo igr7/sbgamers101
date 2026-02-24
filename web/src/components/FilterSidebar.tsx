@@ -156,8 +156,8 @@ export default function FilterSidebar({ filters, onChange, showSort = true }: Pr
         onClick={() => setMobileOpen(!mobileOpen)}
         className="lg:hidden w-full btn-secondary mb-6"
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="square" strokeLinejoin="miter" strokeWidth={2} d="M3 4h18M3 12h18M3 20h18" />
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+          <path strokeLinecap="square" strokeLinejoin="miter" d="M3 4h18M3 12h18M3 20h18" />
         </svg>
         Filters
       </button>
@@ -185,8 +185,8 @@ export default function FilterSidebar({ filters, onChange, showSort = true }: Pr
                 onClick={() => setMobileOpen(false)}
                 className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="square" strokeLinejoin="miter" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                  <path strokeLinecap="square" strokeLinejoin="miter" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
               {content}
