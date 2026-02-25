@@ -1,5 +1,9 @@
 import CategoryPageClient from './CategoryPageClient';
 
+// Force dynamic rendering - don't pre-render at build time
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function generateStaticParams() {
   return [
     { slug: 'gpu' },
